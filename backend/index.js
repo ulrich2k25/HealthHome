@@ -39,3 +39,4 @@ app.get('/api/healthcheck', (req, res) => {
 app.listen(4000, () => {
   console.log('🚀 Backend démarré sur http://localhost:4000');
 });
+ 
