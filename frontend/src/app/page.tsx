@@ -1,56 +1,51 @@
 "use client";
-import { useEffect, useState } from "react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-const mock = [
-  { day: "Lun", bpm: 72 },
-  { day: "Mar", bpm: 75 },
-  { day: "Mer", bpm: 70 },
-  { day: "Jeu", bpm: 78 },
-  { day: "Ven", bpm: 74 },
-  { day: "Sam", bpm: 76 },
-  { day: "Dim", bpm: 73 },
-];
+export default function HomePage() {
+  const router = useRouter();
 
-export default function Dashboard() {
-  const [data, setData] = useState(mock);
-
+  // ✅ Si l’utilisateur est déjà connecté → on le redirige vers le Dashboard
   useEffect(() => {
-    setData(mock);
-  }, []);
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.push("/dashboard");
+    }
+  }, [router]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid md:grid-cols-4 gap-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">BPM</div>
-          <div className="text-3xl font-bold">74</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">Blutdruck</div>
-          <div className="text-3xl font-bold">122/79</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">Schlaf</div>
-          <div className="text-3xl font-bold">7,2 h</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">Kalorien</div>
-          <div className="text-3xl font-bold">1 950</div>
-        </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white text-center px-4">
+      {/* Logo ou Titre principal */}
+      <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-blue-400">
+        Willkommen bei HealthHome🩺
+      </h1>
+
+      <p className="text-gray-300 max-w-lg mb-8">
+        Suivez votre santé, vos rendez-vous et vos données vitales en un seul
+        endroit. Votre bien-être commence ici.
+      </p>
+
+      {/* Boutons principaux */}
+      <div className="flex gap-4">
+        <button
+          onClick={() => router.push("/login")}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+        >
+          Anmelden
+        </button>
+
+        <button
+          onClick={() => router.push("/register")}
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+        >
+        Sich Anmelden
+        </button>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 h-64">
-        <h3 className="text-sm text-gray-400 mb-2">Herzfrequenz (BPM)</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="bpm" stroke="#22c55e" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {/* Footer */}
+      <footer className="absolute bottom-6 text-gray-500 text-sm">
+        © {new Date().getFullYear()} HealthHome. Tous droits réservés.
+      </footer>
     </div>
   );
 }

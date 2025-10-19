@@ -36,6 +36,11 @@ app.get('/api/healthcheck', (req, res) => {
   });
 });
 
+// === Import des routes d'authentification ===
+const authRoutes = require('./routes/authRoutes')(db);
+app.use('/api', authRoutes);
+
+// Démarrage du serveur
 app.listen(4000, () => {
   console.log('🚀 Backend démarré sur http://localhost:4000');
 });
