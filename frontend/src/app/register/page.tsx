@@ -88,7 +88,7 @@ const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
           type="submit"
           className="bg-green-600 hover:bg-green-700 p-2 rounded text-white mt-4"
         >
-          Sich anmelden
+          Registrieren
         </button>
       </form>
 
