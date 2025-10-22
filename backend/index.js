@@ -37,8 +37,12 @@ app.get('/api/healthcheck', (req, res) => {
 });
 
 // === Import des routes d'authentification ===
-const authRoutes = require('./routes/authRoutes')(db);
+const authRoutes = require("./routes/authRoutes")(db);
 app.use('/api', authRoutes);
+
+const terminRoutes = require("./routes/terminRoutes")(db);
+app.use("/api/termin", terminRoutes);
+
 
 // Démarrage du serveur
 app.listen(4000, () => {
