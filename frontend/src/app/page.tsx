@@ -21,8 +21,7 @@ export default function HomePage() {
       </h1>
 
       <p className="text-gray-300 max-w-lg mb-8">
-        Suivez votre santé, vos rendez-vous et vos données vitales en un seul
-        endroit. Votre bien-être commence ici.
+       Verfolgen Sie Ihre Gesundheit, Ihre Termine und Ihre Vitaldaten an einem einzigen Ort. Ihr Wohlbefinden beginnt hier.
       </p>
 
       {/* Boutons principaux */}
@@ -38,7 +37,7 @@ export default function HomePage() {
           onClick={() => router.push("/register")}
           className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
         >
-        Sich Anmelden
+        Registrieren
         </button>
       </div>
 
