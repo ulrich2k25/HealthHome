@@ -40,7 +40,8 @@ app.get('/api/healthcheck', (req, res) => {
 const authRoutes = require("./routes/authRoutes")(db);
 app.use('/api', authRoutes);
 
-const terminRoutes = require("./routes/terminRoutes")(db);
+// ✅ ICI : bon import, avec “termineRoutes”
+const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
 
