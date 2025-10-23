@@ -9,25 +9,32 @@
     "lint": "eslint"
   },
   "dependencies": {
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
     "axios": "^1.12.2",
     "next": "15.5.4",
     "nodemo": "^1.0.0",
 >>>>>>> Stashed changes
+=======
+    "axios": "^1.12.2",
+    "next": "15.5.4",
+>>>>>>> aaec9f160548f392179d363a75a2690f6ddcb139
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.4"
+    "recharts": "^3.2.1"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.1.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "@eslint/eslintrc": "^3"
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5"
   }
 }

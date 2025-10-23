@@ -1,6 +1,7 @@
-
 const express = require('express');
 const cors = require('cors');
+const mysql = require('mysql2');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -25,7 +26,7 @@ db.connect((err) => {
 
 // Route test principale
 app.get('/', (req, res) => {
-  res.send('✅ API HealthHome fonctionne');
+  res.send('✅ API HealthHome fonctionne parfaitement');
 });
 
 app.listen(4000), () => {
