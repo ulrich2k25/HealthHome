@@ -9,6 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+<<<<<<< Updated upstream
+=======
+    "axios": "^1.12.2",
+    "next": "15.5.4",
+    "nodemo": "^1.0.0",
+>>>>>>> Stashed changes
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "next": "15.5.4"
