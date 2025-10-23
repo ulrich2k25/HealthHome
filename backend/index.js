@@ -6,9 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-<<<<<<< Updated upstream
-// Route test
-=======
+
 // Connexion MySQL locale (WAMP)
 const db = mysql.createConnection({
   host: 'localhost',
@@ -26,11 +24,10 @@ db.connect((err) => {
 });
 
 // Route test principale
->>>>>>> Stashed changes
 app.get('/', (req, res) => {
   res.send('✅ API HealthHome fonctionne');
 });
 
-app.listen(4000, () => {
+app.listen(4000), () => {
   console.log('Backend démarré sur http://localhost:4000');
-});
+}
