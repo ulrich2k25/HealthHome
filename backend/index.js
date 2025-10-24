@@ -4,7 +4,11 @@ const mysql = require('mysql2');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:3000", // ton frontend
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }));
 app.use(express.json());
 
 // Connexion MySQL locale (WAMP)
@@ -43,6 +47,11 @@ app.use('/api', authRoutes);
 // ✅ ICI : bon import, avec “termineRoutes”
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
+
+// import nutritionroutes
+const nutritionRoutes = require("./routes/nutritionroutes")(db);
+app.use("/api/nutrition", nutritionRoutes);
+
 
 
 // Démarrage du serveur
