@@ -63,37 +63,62 @@ export default function TerminPage() {
           Neuen Termin erstellen
         </h3>
         <div className="grid md:grid-cols-5 gap-3">
-          <input
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Titel"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-          />
-          <input
-            type="date"
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
-            value={form.date}
-            onChange={(e) => setForm({ ...form, date: e.target.value })}
-          />
-          <input
-            type="time"
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
-            value={form.time}
-            onChange={(e) => setForm({ ...form, time: e.target.value })}
-          />
-          <input
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Arzt"
-            value={form.doctor}
-            onChange={(e) => setForm({ ...form, doctor: e.target.value })}
-          />
-          <input
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Ort"
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-          />
+          <div>
+            <label htmlFor="title" className="sr-only">Titel</label>
+            <input
+              id="title"
+              className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Titel"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="date" className="sr-only">Datum</label>
+            <input
+              id="date"
+              type="date"
+              className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="time" className="sr-only">Uhrzeit</label>
+            <input
+              id="time"
+              type="time"
+              className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={form.time}
+              onChange={(e) => setForm({ ...form, time: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="doctor" className="sr-only">Arzt</label>
+            <input
+              id="doctor"
+              className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Arzt"
+              value={form.doctor}
+              onChange={(e) => setForm({ ...form, doctor: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="location" className="sr-only">Ort</label>
+            <input
+              id="location"
+              className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Ort"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
+          </div>
         </div>
+
         <button
           onClick={save}
           className="mt-4 bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded text-white font-semibold"

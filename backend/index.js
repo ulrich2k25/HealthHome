@@ -12,7 +12,7 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'healthhome'
+  database: 'software'
 });
 
 db.connect((err) => {
@@ -40,8 +40,11 @@ app.get('/api/healthcheck', (req, res) => {
 const authRoutes = require('./routes/authRoutes')(db);
 app.use('/api', authRoutes);
 
+// ✅ === Import de la route du profil utilisateur ===
+const userProfileRoutes = require('./routes/userroutes')(db);
+app.use('/api/user', userProfileRoutes);
+
 // Démarrage du serveur
 app.listen(4000, () => {
   console.log('🚀 Backend démarré sur http://localhost:4000');
 });
- 

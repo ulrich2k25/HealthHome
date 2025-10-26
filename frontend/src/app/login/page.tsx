@@ -21,7 +21,8 @@ export default function LoginPage() {
 
       setMessage("✅ Connexion réussie !");
       // 🔐 Enregistre le token dans le localStorage
-      localStorage.setItem("token", res.data.token);
+      localStorage.setItem('email', email);
+      localStorage.setItem('authToken', res.data.token);
 
       // ✅ Redirection automatique vers le Dashboard
       router.push("/dashboard");
@@ -41,26 +42,34 @@ export default function LoginPage() {
         className="bg-gray-900 p-8 rounded-lg shadow-lg w-full max-w-sm space-y-4"
       >
         <div>
-          <label className="block mb-1">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-gray-800 text-white"
-            required
-          />
-        </div>
+  <label htmlFor="email" className="block mb-1 text-sm font-medium">
+    Email
+  </label>
+  <input
+    id="email"
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    className="w-full px-3 py-2 rounded bg-gray-800 text-white"
+    placeholder="Entrez votre email"
+    required
+  />
+</div>
 
-        <div>
-          <label className="block mb-1">Mot de passe</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-gray-800 text-white"
-            required
-          />
-        </div>
+<div>
+  <label htmlFor="password" className="block mb-1 text-sm font-medium">
+    Mot de passe
+  </label>
+  <input
+    id="password"
+    type="password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    className="w-full px-3 py-2 rounded bg-gray-800 text-white"
+    placeholder="Entrez votre mot de passe"
+    required
+  />
+</div>
 
         <button
           type="submit"
