@@ -44,6 +44,14 @@ app.use('/api', authRoutes);
 const userProfileRoutes = require('./routes/userroutes')(db);
 app.use('/api/user', userProfileRoutes);
 
+const editProfileRoutes = require('./routes/editprofileroutes')(db);
+app.use('/api/user', editProfileRoutes);
+
+const diagnosisRoutes = require("./routes/diagnosisRoutes")(db);
+app.use("/api/diagnosis", diagnosisRoutes);
+
+
+
 // Démarrage du serveur
 app.listen(4000, () => {
   console.log('🚀 Backend démarré sur http://localhost:4000');

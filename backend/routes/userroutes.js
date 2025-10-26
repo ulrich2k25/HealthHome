@@ -1,32 +1,31 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 
 module.exports = (db) => {
-  router.post("/profile", async (req, res) => {
+  // === Route : obtenir le profil utilisateur ===
+  router.post('/profile', (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ message: "Email manquant." });
+      return res.status(400).json({ message: 'E-Mail erforderlich' });
     }
 
-    try {
-      const [rows] = await db
-        .promise()
-        .query(
-          "SELECT vorname, nachname, email, alter_jahre, geschlecht, gewicht, groesse, allergien, diagnose FROM users WHERE email = ?",
-          [email]
-        );
-
-      if (rows.length === 0) {
-        return res.status(404).json({ message: "Utilisateur non trouvé." });
+    const sql = 'SELECT * FROM users WHERE email = ?';
+    db.query(sql, [email], (err, results) => {
+      if (err) {
+        console.error('❌ SQL-Fehler:', err);
+        return res.status(500).json({ message: 'Serverfehler beim Abrufen der Daten' });
       }
 
-      res.json({ success: true, user: rows[0] });
-    } catch (err) {
-      console.error("Erreur profil utilisateur :", err);
-      res.status(500).json({ message: "Erreur serveur." });
-    }
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+      }
+
+      res.json({ user: results[0] });
+    });
   });
+
+  
 
   return router;
 };

@@ -44,8 +44,13 @@ export default function UserProfilPage() {
       setIsAuthorized(true);
 
       axios
-        .post("http://localhost:4000/api/user/profile", { email })
-        .then((res) => setUser(res.data.user))
+  .post("http://localhost:4000/api/user/profile", { email })
+  .then(async (res) => {
+    const userData = res.data.user;
+    const diagRes = await axios.post("http://localhost:4000/api/diagnosis/list", { email });
+    setUser({ ...userData, diagnoses: diagRes.data.diagnoses });
+  })
+
         .catch((err) => {
           console.error(err);
           router.push("/login");
@@ -71,19 +76,33 @@ export default function UserProfilPage() {
     setShowAddForm(true);
   };
 
-  const handleSaveDiagnosis = () => {
-    if (!user) return;
-    const updated = {
-      ...user,
-      diagnoses: [
-        ...(user.diagnoses || []),
-        { id: Date.now().toString(), ...newDiagnosis },
-      ],
-    };
-    setUser(updated);
-    setNewDiagnosis({ diagnosis: "", doctorComments: "", date: "" });
-    setShowAddForm(false);
-  };
+  
+    const handleSaveDiagnosis = async () => {
+  const email = localStorage.getItem("email");
+  if (!email) return;
+
+  try {
+    const response = await axios.post("http://localhost:4000/api/diagnosis/add", {
+      email,
+      diagnosis: newDiagnosis.diagnosis,
+      doctorComments: newDiagnosis.doctorComments,
+      date: newDiagnosis.date,
+    });
+
+    if (response.data.success) {
+      alert("Diagnose gespeichert!");
+      // Recharger les diagnoses
+      const diagRes = await axios.post("http://localhost:4000/api/diagnosis/list", { email });
+      setUser((prev) => prev ? { ...prev, diagnoses: diagRes.data.diagnoses } : prev);
+      setShowAddForm(false);
+      setNewDiagnosis({ diagnosis: "", doctorComments: "", date: "" });
+    }
+  } catch (err) {
+    console.error("Fehler beim Speichern:", err);
+    alert("Fehler beim Speichern der Diagnose!");
+  }
+};
+  
 
   const handleEditDiagnosis = (id: string) => {
     alert(`Bearbeiten der Diagnose ${id} (Simulation)`);
@@ -188,7 +207,7 @@ export default function UserProfilPage() {
             <h2 className="text-xl font-semibold text-gray-800">Diagnosen</h2>
             <button
               onClick={handleAddDiagnosis}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm"
+              className="flex items-center gap-2 bg-white-600 hover:bg-white-700 text-black px-3 py-2 rounded-lg text-sm"
               title="Diagnose hinzufügen"
             >
               <Plus size={16} /> Diagnose hinzufügen
@@ -203,7 +222,7 @@ export default function UserProfilPage() {
                 <input
                   id="diagnosis"
                   type="text"
-                  placeholder="z. B. Bluthochdruck (Grad 1)"
+                  
                   value={newDiagnosis.diagnosis}
                   onChange={(e) =>
                     setNewDiagnosis({ ...newDiagnosis, diagnosis: e.target.value })
@@ -217,7 +236,7 @@ export default function UserProfilPage() {
                 </label>
                 <textarea
                   id="kommentar"
-                  placeholder="Empfehlung des Arztes eingeben..."
+                  placeholder="Empfehlung des Arztes eingeben.."
                   value={newDiagnosis.doctorComments}
                   onChange={(e) =>
                     setNewDiagnosis({ ...newDiagnosis, doctorComments: e.target.value })
@@ -249,7 +268,7 @@ export default function UserProfilPage() {
                 </button>
                 <button
                   onClick={handleSaveDiagnosis}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm"
                   title="Speichern"
                 >
                   Speichern
@@ -275,14 +294,14 @@ export default function UserProfilPage() {
                 <div className="flex gap-2 justify-end">
                   <button
                     onClick={() => handleEditDiagnosis(diag.id)}
-                    className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded text-white text-sm"
+                    className="flex items-center gap-1 bg-white-500 hover:bg-white-600 px-3 py-1 rounded text-black text-sm"
                     title="Bearbeiten"
                   >
                     <Edit size={14} /> Bearbeiten
                   </button>
                   <button
                     onClick={() => handleDeleteDiagnosis(diag.id)}
-                    className="flex items-center gap-1 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm"
+                    className="flex items-center gap-1 bg-white-600 hover:bg-white-700 px-3 py-1 rounded text-black text-sm"
                     title="Löschen"
                   >
                     <Trash2 size={14} /> Löschen
