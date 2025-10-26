@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { UserCircle, Edit, Trash2, Plus, X } from "lucide-react";
 
 interface Diagnosis {
   id: string;
@@ -19,9 +20,6 @@ interface User {
   gewicht?: number;
   groesse?: number;
   allergien?: string;
-  diagnose?: string;
-  doktor_diagnosen?: string;
-  zusatz_info?: string;
   diagnoses?: Diagnosis[];
 }
 
@@ -29,7 +27,12 @@ export default function UserProfilPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [editingDiagnosis, setEditingDiagnosis] = useState<number | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newDiagnosis, setNewDiagnosis] = useState({
+    diagnosis: "",
+    doctorComments: "",
+    date: "",
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -60,36 +63,44 @@ export default function UserProfilPage() {
     router.push("/dashboard");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Ici, vous pouvez ajouter un appel API pour sauvegarder les données
-    alert("Données sauvegardées (simulation)");
+  const handleEditProfile = () => {
+    router.push("/edit-profile");
   };
 
-  const handleDeleteField = (field: keyof User) => {
-    if (user) {
-      setUser({ ...user, [field]: field === 'alter_jahre' || field === 'gewicht' || field === 'groesse' ? undefined : '' });
-    }
+  const handleAddDiagnosis = () => {
+    setShowAddForm(true);
   };
 
-  const handleEditDiagnosis = (index: number) => {
-    setEditingDiagnosis(index);
-    // Ici, vous pouvez implémenter la logique d'édition (par exemple, ouvrir un modal ou activer l'édition en ligne)
-    alert(`Édition de la diagnose ${index + 1} (simulation)`);
+  const handleSaveDiagnosis = () => {
+    if (!user) return;
+    const updated = {
+      ...user,
+      diagnoses: [
+        ...(user.diagnoses || []),
+        { id: Date.now().toString(), ...newDiagnosis },
+      ],
+    };
+    setUser(updated);
+    setNewDiagnosis({ diagnosis: "", doctorComments: "", date: "" });
+    setShowAddForm(false);
   };
 
-  const handleDeleteDiagnosis = (index: number) => {
-    if (user && user.diagnoses) {
-      const updatedDiagnoses = user.diagnoses.filter((_, i) => i !== index);
-      setUser({ ...user, diagnoses: updatedDiagnoses });
-      // Ici, vous pouvez ajouter un appel API pour supprimer la diagnose
-      alert(`Diagnose ${index + 1} supprimée (simulation)`);
-    }
+  const handleEditDiagnosis = (id: string) => {
+    alert(`Bearbeiten der Diagnose ${id} (Simulation)`);
+  };
+
+  const handleDeleteDiagnosis = (id: string) => {
+    if (!user) return;
+    const updated = {
+      ...user,
+      diagnoses: user.diagnoses?.filter((d) => d.id !== id),
+    };
+    setUser(updated);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center min-h-screen bg-[#f7f8fa] text-gray-700">
         <p>Lade Profil...</p>
       </div>
     );
@@ -97,320 +108,199 @@ export default function UserProfilPage() {
 
   if (!isAuthorized || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center min-h-screen bg-[#f7f8fa] text-gray-700">
         <p>Benutzer nicht angemeldet.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center">
-      <div className="w-full max-w-xl bg-gray-800 p-6 rounded-2xl space-y-6">
-        {/* Header avec bouton de fermeture */}
-        <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-[#f7f8fa] text-gray-800 p-6 flex flex-col items-center">
+      <div className="w-full max-w-lg bg-white p-6 rounded-2xl shadow-lg relative">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4">
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-white text-xl"
+            className="text-gray-400 hover:text-gray-600 text-xl"
             title="Zurück zum Dashboard"
           >
-            ×
+            <X aria-label="Fenster schließen" />
           </button>
+
+          <button
+            onClick={handleEditProfile}
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm font-medium text-gray-700"
+            title="Profil bearbeiten"
+          >
+            <Edit size={16} />
+            Bearbeiten
+          </button>
+        </div>
+
+        {/* Profil info */}
+        <div className="flex flex-col items-center space-y-3 mb-6">
+          <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-5xl text-gray-500">
+            <UserCircle size={48} aria-label="Profilbild" />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-800">Benutzerprofil</h1>
+          <p className="text-gray-500">Ihre persönlichen Informationen</p>
+        </div>
+
+        {/* Informations utilisateur */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Benutzerprofil</h1>
-            <p className="text-gray-400">Ihre persönlichen Informationen</p>
+            <label className="text-sm text-gray-500" htmlFor="vorname">Vorname</label>
+            <p id="vorname" className="bg-gray-50 p-2 rounded-md">{user.vorname}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500" htmlFor="nachname">Nachname</label>
+            <p id="nachname" className="bg-gray-50 p-2 rounded-md">{user.nachname}</p>
+          </div>
+          <div className="col-span-2">
+            <label className="text-sm text-gray-500" htmlFor="email">E-Mail-Adresse</label>
+            <p id="email" className="bg-gray-50 p-2 rounded-md">{user.email}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500" htmlFor="alter">Alter</label>
+            <p id="alter" className="bg-gray-50 p-2 rounded-md">{user.alter_jahre ?? "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500" htmlFor="geschlecht">Geschlecht</label>
+            <p id="geschlecht" className="bg-gray-50 p-2 rounded-md">{user.geschlecht ?? "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500" htmlFor="gewicht">Gewicht (kg)</label>
+            <p id="gewicht" className="bg-gray-50 p-2 rounded-md">{user.gewicht ?? "—"}</p>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500" htmlFor="groesse">Größe (cm)</label>
+            <p id="groesse" className="bg-gray-50 p-2 rounded-md">{user.groesse ?? "—"}</p>
+          </div>
+          <div className="col-span-2">
+            <label className="text-sm text-gray-500" htmlFor="allergien">Allergien</label>
+            <p id="allergien" className="bg-gray-50 p-2 rounded-md">{user.allergien ?? "Keine"}</p>
           </div>
         </div>
 
-        {/* Formulaire utilisateur */}
-        <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <label htmlFor="vorname" className="block text-sm text-gray-400">Vorname</label>
-              <div className="flex gap-2">
+        {/* Diagnosen */}
+        <div className="mt-8 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">Diagnosen</h2>
+            <button
+              onClick={handleAddDiagnosis}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm"
+              title="Diagnose hinzufügen"
+            >
+              <Plus size={16} /> Diagnose hinzufügen
+            </button>
+          </div>
+
+          {/* Formulaire d'ajout */}
+          {showAddForm && (
+            <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg space-y-3">
+              <div>
+                <label className="text-sm text-gray-600" htmlFor="diagnosis">Diagnose</label>
                 <input
-                  id="vorname"
+                  id="diagnosis"
                   type="text"
-                  value={user.vorname}
-                  onChange={(e) => setUser({ ...user, vorname: e.target.value })}
-                  className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                  required
+                  placeholder="z. B. Bluthochdruck (Grad 1)"
+                  value={newDiagnosis.diagnosis}
+                  onChange={(e) =>
+                    setNewDiagnosis({ ...newDiagnosis, diagnosis: e.target.value })
+                  }
+                  className="w-full bg-white border border-gray-300 text-gray-800 p-2 rounded-md"
                 />
-                <button
-                  type="button"
-                  onClick={() => handleDeleteField('vorname')}
-                  className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                  title="Löschen"
-                >
-                  ×
-                </button>
               </div>
-            </div>
-
-            <div className="grid gap-2">
-              <label htmlFor="nachname" className="block text-sm text-gray-400">Nachname</label>
-              <div className="flex gap-2">
+              <div>
+                <label className="text-sm text-gray-600" htmlFor="kommentar">
+                  Kommentar des Arztes
+                </label>
+                <textarea
+                  id="kommentar"
+                  placeholder="Empfehlung des Arztes eingeben..."
+                  value={newDiagnosis.doctorComments}
+                  onChange={(e) =>
+                    setNewDiagnosis({ ...newDiagnosis, doctorComments: e.target.value })
+                  }
+                  className="w-full bg-white border border-gray-300 text-gray-800 p-2 rounded-md"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-600" htmlFor="datum">Datum</label>
                 <input
-                  id="nachname"
-                  type="text"
-                  value={user.nachname}
-                  onChange={(e) => setUser({ ...user, nachname: e.target.value })}
-                  className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                  required
+                  id="datum"
+                  type="date"
+                  title="Datum der Diagnose"
+                  value={newDiagnosis.date}
+                  onChange={(e) =>
+                    setNewDiagnosis({ ...newDiagnosis, date: e.target.value })
+                  }
+                  className="w-full bg-white border border-gray-300 text-gray-800 p-2 rounded-md"
                 />
+              </div>
+              <div className="flex justify-end gap-2">
                 <button
-                  type="button"
-                  onClick={() => handleDeleteField('nachname')}
-                  className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                  title="Löschen"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm text-gray-700"
+                  title="Abbrechen"
                 >
-                  ×
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleSaveDiagnosis}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+                  title="Speichern"
+                >
+                  Speichern
                 </button>
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="grid gap-2">
-            <label htmlFor="email" className="block text-sm text-gray-400">E-Mail-Adresse</label>
-            <div className="flex gap-2">
-              <input
-                id="email"
-                type="email"
-                value={user.email}
-                onChange={(e) => setUser({ ...user, email: e.target.value })}
-                className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => handleDeleteField('email')}
-                className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                title="Löschen"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <label htmlFor="alter" className="block text-sm text-gray-400">Alter</label>
-              <div className="flex gap-2">
-                <input
-                  id="alter"
-                  type="number"
-                  value={user.alter_jahre || ""}
-                  onChange={(e) => setUser({ ...user, alter_jahre: parseInt(e.target.value) || undefined })}
-                  className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleDeleteField('alter_jahre')}
-                  className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                  title="Löschen"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <label htmlFor="geschlecht" className="block text-sm text-gray-400">Geschlecht</label>
-              <div className="flex gap-2">
-                <select
-                  id="geschlecht"
-                  value={user.geschlecht || ""}
-                  onChange={(e) => setUser({ ...user, geschlecht: e.target.value })}
-                  className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                >
-                  <option value="">Nicht angegeben</option>
-                  <option value="Weiblich">Weiblich</option>
-                  <option value="Männlich">Männlich</option>
-                  <option value="Divers">Divers</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteField('geschlecht')}
-                  className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                  title="Löschen"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <label htmlFor="gewicht" className="block text-sm text-gray-400">Gewicht (kg)</label>
-              <div className="flex gap-2">
-                <input
-                  id="gewicht"
-                  type="number"
-                  value={user.gewicht || ""}
-                  onChange={(e) => setUser({ ...user, gewicht: parseFloat(e.target.value) || undefined })}
-                  className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleDeleteField('gewicht')}
-                  className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                  title="Löschen"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <label htmlFor="groesse" className="block text-sm text-gray-400">Größe (cm)</label>
-              <div className="flex gap-2">
-                <input
-                  id="groesse"
-                  type="number"
-                  value={user.groesse || ""}
-                  onChange={(e) => setUser({ ...user, groesse: parseFloat(e.target.value) || undefined })}
-                  className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleDeleteField('groesse')}
-                  className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                  title="Löschen"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="allergien" className="block text-sm text-gray-400">Allergien</label>
-            <div className="flex gap-2">
-              <textarea
-                id="allergien"
-                placeholder="z.B. Penicillin, Erdnüsse"
-                value={user.allergien || ""}
-                onChange={(e) => setUser({ ...user, allergien: e.target.value })}
-                rows={2}
-                className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-              />
-              <button
-                type="button"
-                onClick={() => handleDeleteField('allergien')}
-                className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm self-start"
-                title="Löschen"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="diagnose" className="block text-sm text-gray-400">Diagnose</label>
-            <div className="flex gap-2">
-              <input
-                id="diagnose"
-                type="text"
-                value={user.diagnose || ""}
-                onChange={(e) => setUser({ ...user, diagnose: e.target.value })}
-                className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-              />
-              <button
-                type="button"
-                onClick={() => handleDeleteField('diagnose')}
-                className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm"
-                title="Löschen"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="doktor_diagnosen" className="block text-sm text-gray-400">Diagnosen vom Doktor</label>
-            <div className="flex gap-2">
-              <textarea
-                id="doktor_diagnosen"
-                value={user.doktor_diagnosen || ""}
-                onChange={(e) => setUser({ ...user, doktor_diagnosen: e.target.value })}
-                rows={3}
-                className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-              />
-              <button
-                type="button"
-                onClick={() => handleDeleteField('doktor_diagnosen')}
-                className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm self-start"
-                title="Löschen"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <label htmlFor="zusatz_info" className="block text-sm text-gray-400">Zusätzliche Informationen</label>
-            <div className="flex gap-2">
-              <textarea
-                id="zusatz_info"
-                value={user.zusatz_info || ""}
-                onChange={(e) => setUser({ ...user, zusatz_info: e.target.value })}
-                rows={3}
-                className="flex-1 px-3 py-2 rounded-md border bg-gray-900 text-white"
-              />
-              <button
-                type="button"
-                onClick={() => handleDeleteField('zusatz_info')}
-                className="px-2 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm self-start"
-                title="Löschen"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-medium"
-          >
-            Speichern
-          </button>
-        </form>
-
-        {/* Section Diagnosen */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">Diagnosen</h2>
+          {/* Liste des Diagnosen */}
           {user.diagnoses && user.diagnoses.length > 0 ? (
-            user.diagnoses.map((diag, index) => (
-              <div key={diag.id} className="bg-gray-700 p-4 rounded-lg space-y-2">
-                <p><strong>Diagnose:</strong> {diag.diagnosis}</p>
-                <p><strong>Kommentare des Doktors:</strong> {diag.doctorComments}</p>
-                <p><strong>Datum:</strong> {diag.date}</p>
-                <div className="flex gap-2">
+            user.diagnoses.map((diag) => (
+              <div key={diag.id} className="bg-gray-50 border border-gray-200 p-4 rounded-lg space-y-3">
+                <div>
+                  <p className="font-semibold text-gray-800">{diag.diagnosis}</p>
+                  <p className="text-sm text-gray-500">Datum: {diag.date}</p>
+                </div>
+                <div className="bg-white border border-gray-200 p-3 rounded-md">
+                  <p className="text-sm text-gray-500 mb-1">
+                    Kommentar des Arztes:
+                  </p>
+                  <p className="text-gray-700">{diag.doctorComments}</p>
+                </div>
+                <div className="flex gap-2 justify-end">
                   <button
-                    onClick={() => handleEditDiagnosis(index)}
-                    className="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-white text-sm"
+                    onClick={() => handleEditDiagnosis(diag.id)}
+                    className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded text-white text-sm"
+                    title="Bearbeiten"
                   >
-                    Bearbeiten
+                    <Edit size={14} /> Bearbeiten
                   </button>
                   <button
-                    onClick={() => handleDeleteDiagnosis(index)}
-                    className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm"
+                    onClick={() => handleDeleteDiagnosis(diag.id)}
+                    className="flex items-center gap-1 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm"
+                    title="Löschen"
                   >
-                    Löschen
+                    <Trash2 size={14} /> Löschen
                   </button>
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-gray-400">Keine Diagnosen vorhanden.</p>
+            <p className="text-gray-500">Keine Diagnosen vorhanden.</p>
           )}
         </div>
 
-        {/* Bouton déconnexion */}
-        <div className="flex justify-end mt-4">
+        {/* Logout */}
+        <div className="flex justify-end mt-6">
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white font-medium"
+            title="Abmelden"
           >
             Abmelden
           </button>
