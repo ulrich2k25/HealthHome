@@ -7,7 +7,7 @@ type Medikament = {
   id?: number;
   name: string;
   dose: string;
-   date?: string;   
+  date?: string;
   time: string;
   taken: boolean;
 };
@@ -24,33 +24,92 @@ export default function MedikamentePage() {
     taken: false,
   });
 
+  // ✅ Charger tous les médicaments
   const load = async () => {
     const res = await axios.get<Medikament[]>(`${API}/medikamente`);
     setItems(res.data || []);
   };
 
- const save = async () => {
-  if (!form.name || !form.time) return alert("Name und Uhrzeit sind erforderlich.");
+  // ✅ Sauvegarder un médicament + planifier la notification
+  const save = async () => {
+    if (!form.name || !form.time)
+      return alert("Name und Uhrzeit sind erforderlich.");
 
-  await axios.post(`${API}/medikamente`, form);
+    await axios.post(`${API}/medikamente`, form);
 
-  // ✅ Planifie la notification avant de vider le formulaire
- const dateString = form.date ? form.date : new Date().toISOString().split("T")[0];
-const fullDateTime = `${dateString}T${form.time}`;
+    // 1️⃣ On prend la date saisie ou la date d'aujourd'hui
+    const dateString = form.date
+      ? form.date
+      : new Date().toISOString().split("T")[0];
+    const fullDateTime = `${dateString}T${form.time}`;
+    const now = new Date();
+    const target = new Date(fullDateTime);
+    const delay = target.getTime() - now.getTime();
 
-await scheduleNotification(
-  "💊 HealthHome",
-  `Vergessen Sie nicht, Ihre Medikamente einzunehmen : ${form.name}`,
-  fullDateTime // ✅ on envoie une seule valeur propre
-);
+    console.log("💊 Notification prévue :", fullDateTime);
+    console.log("⏳ Délai (ms) :", delay);
 
+    // 2️⃣ Vérifie si la date est future
+    if (isNaN(target.getTime()) || delay <= 0) {
+      console.warn("⛔ La date est invalide ou déjà passée :", fullDateTime);
+    } else {
+      // 💾 Sauvegarde dans localStorage pour replanifier après refresh
+      localStorage.setItem(
+        "pendingMedNotification",
+        JSON.stringify({
+          title: "💊 HealthHome",
+          message: `Vergessen Sie nicht, Ihre Medikamente einzunehmen : ${form.name}`,
+          dateTime: fullDateTime,
+        })
+      );
 
-  // ✅ Ensuite on vide le formulaire et recharge la liste
-  setForm({ name: "", dose: "", time: "", taken: false });
-  load();
-};
+      // 🔔 Notification immédiate (si la page reste ouverte)
+      await scheduleNotification(
+        "💊 HealthHome",
+        `Vergessen Sie nicht, Ihre Medikamente einzunehmen : ${form.name}`,
+        fullDateTime
+      );
 
+      console.log(
+        `✅ Notification programmée pour ${target.toLocaleString("de-DE", {
+          timeZone: "Europe/Berlin",
+        })}`
+      );
+    }
 
+    // 🧹 Vide le formulaire et recharge la liste
+    setForm({ name: "", dose: "", date: "", time: "", taken: false });
+    load();
+  };
+
+  // ✅ Replanifie la notification après un refresh de la page
+  useEffect(() => {
+    load();
+
+    const stored = JSON.parse(localStorage.getItem("pendingMedNotification") || "null");
+    if (stored) {
+      const now = new Date().getTime();
+      const target = new Date(stored.dateTime).getTime();
+
+      if (now >= target) {
+        // 🔔 Si l'heure est passée, on notifie tout de suite
+        new Notification(stored.title, { body: stored.message });
+        localStorage.removeItem("pendingMedNotification");
+      } else {
+        // ⏳ Sinon on reprogramme la notification
+        const delay = target - now;
+        console.log(
+          `⏳ Replanification médicament dans ${Math.round(delay / 1000)}s`
+        );
+        setTimeout(() => {
+          new Notification(stored.title, { body: stored.message });
+          localStorage.removeItem("pendingMedNotification");
+        }, delay);
+      }
+    }
+  }, []);
+
+  // ✅ Actions : pris, oublié, supprimé
   const markTaken = async (id: number) => {
     await axios.put(`${API}/medikamente/${id}/taken`);
     load();
@@ -66,41 +125,40 @@ await scheduleNotification(
     load();
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-gray-100 space-y-8 p-6">
-      {/* Section: ajouter un médicament */}
+      {/* --- Formulaire --- */}
       <div className="bg-[#12182b] border border-gray-700 rounded-2xl p-5 shadow-lg">
-        <h3 className="font-semibold text-xl mb-4 text-white">Neues Medikament hinzufügen</h3>
-    <div className="grid md:grid-cols-4 gap-3">
-  <input
-    className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400"
-    placeholder="Medikament"
-    value={form.name}
-    onChange={(e) => setForm({ ...form, name: e.target.value })}
-  />
-  <input
-    className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400"
-    placeholder="Dosis (z.B. 100mg)"
-    value={form.dose}
-    onChange={(e) => setForm({ ...form, dose: e.target.value })}
-  />
-  <input
-    type="date"
-    className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white"
-    value={form.date || ""}
-    onChange={(e) => setForm({ ...form, date: e.target.value })}
-  />
-  <input
-    type="time"
-    className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white"
-    value={form.time || ""}
-    onChange={(e) => setForm({ ...form, time: e.target.value })}
-  />
-</div>
+        <h3 className="font-semibold text-xl mb-4 text-white">
+          Neues Medikament hinzufügen
+        </h3>
+
+        <div className="grid md:grid-cols-4 gap-3">
+          <input
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400"
+            placeholder="Medikament"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <input
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400"
+            placeholder="Dosis (z.B. 100mg)"
+            value={form.dose}
+            onChange={(e) => setForm({ ...form, dose: e.target.value })}
+          />
+          <input
+            type="date"
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white"
+            value={form.date || ""}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+          />
+          <input
+            type="time"
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white"
+            value={form.time || ""}
+            onChange={(e) => setForm({ ...form, time: e.target.value })}
+          />
+        </div>
 
         <button
           onClick={save}
@@ -110,9 +168,11 @@ await scheduleNotification(
         </button>
       </div>
 
-      {/* Section: liste des médicaments */}
+      {/* --- Liste --- */}
       <div className="bg-[#12182b] border border-gray-700 rounded-2xl p-5 shadow-lg">
-        <h3 className="font-semibold text-xl mb-4 text-white">Medikamente heute</h3>
+        <h3 className="font-semibold text-xl mb-4 text-white">
+          Medikamente heute
+        </h3>
         <div className="grid gap-3">
           {items.map((m) => (
             <div
@@ -121,20 +181,19 @@ await scheduleNotification(
             >
               <div>
                 <p className="text-white text-lg font-medium">{m.name}</p>
-
                 <p className="text-gray-400 text-sm">
-                {m.dose || "–"} • {m.date ? m.date.split("T")[0] : "-"} um {m.time?.substring(0, 5)}
-               </p>
-
-                <p className="text-gray-400 text-sm">
-                  {m.dose || "–"} • {m.time?.substring(0, 5)}
+                  {m.dose || "–"} • {m.date ? m.date.split("T")[0] : "-"} um{" "}
+                  {m.time?.substring(0, 5)}
                 </p>
               </div>
+
               <div className="flex gap-2 mt-3 md:mt-0">
                 <button
                   onClick={() => markTaken(m.id!)}
                   className={`px-4 py-1 rounded ${
-                    m.taken ? "bg-green-600" : "bg-gray-600 hover:bg-green-700"
+                    m.taken
+                      ? "bg-green-600"
+                      : "bg-gray-600 hover:bg-green-700"
                   } text-white`}
                 >
                   Eingenommen
@@ -156,7 +215,9 @@ await scheduleNotification(
           ))}
 
           {items.length === 0 && (
-            <p className="text-gray-400 italic text-center">Keine Medikamente vorhanden</p>
+            <p className="text-gray-400 italic text-center">
+              Keine Medikamente vorhanden
+            </p>
           )}
         </div>
       </div>

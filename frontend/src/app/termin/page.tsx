@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
 
-
 type Termin = {
   _id?: string;
   title: string;
@@ -25,45 +24,95 @@ export default function TerminPage() {
     location: "",
   });
 
+  // ✅ Charger tous les rendez-vous
   const load = async () => {
     const res = await axios.get(`${API}/termin`);
     setItems(res.data || []);
   };
 
- const save = async () => {
-  if (!form.title || !form.date || !form.time)
-    return alert("Titel, Datum und Uhrzeit sind erforderlich.");
+  // ✅ Sauvegarder un nouveau rendez-vous et planifier la notification
+  const save = async () => {
+    if (!form.title || !form.date || !form.time)
+      return alert("Titel, Datum und Uhrzeit sind erforderlich.");
 
-  try {
-    // ➕ Enregistrement du rendez-vous
-    await axios.post(`${API}/termin`, form);
+    try {
+      // ➕ Enregistrement du rendez-vous
+      await axios.post(`${API}/termin`, form);
 
-    // 🔔 Planification de la notification
-    const fullDateTime = `${form.date}T${form.time}`;
-    await scheduleNotification(
-      "📅 HealthHome - Termin",
-      `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
-      fullDateTime
-    );
+      // 🔔 Planification locale
+      const fullDateTime = `${form.date}T${form.time}`;
+      const now = new Date();
+      const target = new Date(fullDateTime);
+      const delay = target.getTime() - now.getTime();
 
-    // ✅ Réinitialisation du formulaire et rechargement
-    setForm({ title: "", date: "", time: "", doctor: "", location: "" });
-    load();
+      console.log("📅 Notification prévue :", fullDateTime);
+      console.log("⏳ Délai (ms) :", delay);
 
-    console.log("✅ Termin gespeichert und Benachrichtigung geplant:", fullDateTime);
-  } catch (err) {
-    console.error("❌ Fehler beim Speichern oder bei der Benachrichtigung:", err);
-  }
-};
+      if (isNaN(target.getTime()) || delay <= 0) {
+        console.warn("⛔ La date est invalide ou déjà passée :", fullDateTime);
+      } else {
+        // 💾 Sauvegarde locale pour replanification après refresh
+        localStorage.setItem(
+          "pendingTerminNotification",
+          JSON.stringify({
+            title: "📅 HealthHome - Termin",
+            message: `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
+            dateTime: fullDateTime,
+          })
+        );
 
+        // 🔔 Planifie la notification (pendant que la page reste ouverte)
+        await scheduleNotification(
+          "📅 HealthHome - Termin",
+          `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
+          fullDateTime
+        );
 
+        console.log(
+          `✅ Notification programmée pour ${target.toLocaleString("de-DE", {
+            timeZone: "Europe/Berlin",
+          })}`
+        );
+      }
+
+      // ✅ Réinitialisation du formulaire et rechargement
+      setForm({ title: "", date: "", time: "", doctor: "", location: "" });
+      load();
+    } catch (err) {
+      console.error("❌ Fehler beim Speichern oder bei der Benachrichtigung:", err);
+    }
+  };
+
+  // ✅ Replanification automatique après un refresh
   useEffect(() => {
     load();
+
+    const stored = JSON.parse(localStorage.getItem("pendingTerminNotification") || "null");
+    if (stored) {
+      const now = new Date().getTime();
+      const target = new Date(stored.dateTime).getTime();
+
+      if (now >= target) {
+        // 🔔 Si le moment est déjà arrivé, on notifie immédiatement
+        new Notification(stored.title, { body: stored.message });
+        localStorage.removeItem("pendingTerminNotification");
+      } else {
+        // ⏳ Sinon on reprogramme
+        const delay = target - now;
+        console.log(
+          `⏳ Replanification Termin dans ${Math.round(delay / 1000)}s`
+        );
+        setTimeout(() => {
+          new Notification(stored.title, { body: stored.message });
+          localStorage.removeItem("pendingTerminNotification");
+        }, delay);
+      }
+    }
   }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-gray-100 space-y-8 p-6">
-      {/* Section: nouveau rendez-vous */}
+      {/* --- Section : nouveau rendez-vous --- */}
       <div className="bg-[#12182b] border border-gray-700 rounded-2xl p-5 shadow-lg">
         <h3 className="font-semibold text-xl mb-4 text-white">
           Neuen Termin erstellen
@@ -77,24 +126,24 @@ export default function TerminPage() {
           />
           <input
             type="date"
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 outline-none"
             value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })}
           />
           <input
             type="time"
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 outline-none"
             value={form.time}
             onChange={(e) => setForm({ ...form, time: e.target.value })}
           />
           <input
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Arzt"
             value={form.doctor}
             onChange={(e) => setForm({ ...form, doctor: e.target.value })}
           />
           <input
-            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="p-2 rounded bg-[#1b2338] border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 outline-none"
             placeholder="Ort"
             value={form.location}
             onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -108,7 +157,7 @@ export default function TerminPage() {
         </button>
       </div>
 
-      {/* Section: rendez-vous existants */}
+      {/* --- Section : rendez-vous existants --- */}
       <div className="bg-[#12182b] border border-gray-700 rounded-2xl p-5 shadow-lg">
         <h3 className="font-semibold text-xl mb-4 text-white">
           Anstehende Termine
@@ -131,7 +180,11 @@ export default function TerminPage() {
                   className="border-t border-gray-700 hover:bg-[#1b2338] transition"
                 >
                   <td className="p-2 text-gray-100">{t.title}</td>
-                  <td className="p-2 text-gray-100">{t.date}</td>
+                  <td className="p-2 text-gray-100">
+                    {new Date(t.date).toLocaleDateString("sv-SE", {
+                      timeZone: "Europe/Berlin",
+                    })}
+                  </td>
                   <td className="p-2 text-gray-100">{t.time}</td>
                   <td className="p-2 text-gray-100">{t.doctor}</td>
                   <td className="p-2 text-gray-100">{t.location}</td>
