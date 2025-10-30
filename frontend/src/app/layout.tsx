@@ -1,4 +1,5 @@
 import "./globals.css";
+import MainLayout from "@/components/MainLayout";
 import Link from "next/link";
 
 export const metadata = {

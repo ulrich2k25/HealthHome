@@ -87,7 +87,7 @@ export default function RegisterPage() {
           type="submit"
           className="bg-[#10B981] hover:bg-[#059669] p-3 rounded text-white font-semibold mt-2 transition"
         >
-          Sich anmelden
+          Registrieren
         </button>
       </form>
 

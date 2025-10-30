@@ -21,9 +21,8 @@ export default function HomePage() {
         Willkommen bei HealthHome🩺
       </h1>
 
-      <p className="text-[#4B5563] max-w-lg mb-8">
-        Suivez votre santé, vos rendez-vous et vos données vitales en un seul
-        endroit. Votre bien-être commence ici.
+      <p className="text-gray-300 max-w-lg mb-8">
+       Verfolgen Sie Ihre Gesundheit, Ihre Termine und Ihre Vitaldaten an einem einzigen Ort. Ihr Wohlbefinden beginnt hier.
       </p>
 
       {/* Boutons principaux */}
