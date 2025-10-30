@@ -7,25 +7,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Connexion MySQL locale (WAMP)
+// 🌍 Connexion MySQL hébergée en ligne
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'healthhome'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
 });
+
 
 db.connect((err) => {
   if (err) {
-    console.error('❌ Erreur de connexion à MySQL :', err);
+    console.error('❌ Erreur de connexion à la base distante :', err);
   } else {
-    console.log('✅ Connecté à la base de données MySQL locale (WAMP)');
+    console.log('✅ Connecté à la base MySQL distante (FreeSQLDatabase.com)');
   }
 });
 
 // Route test principale
 app.get('/', (req, res) => {
-  res.send('✅ API HealthHome fonctionne parfaitement');
+  res.send('✅ API HealthHome fonctionne parfaitement (base distante connectée)');
 });
 
 // Test de requête SQL simple
@@ -36,25 +38,20 @@ app.get('/api/healthcheck', (req, res) => {
   });
 });
 
-// === Import des routes d'authentification ===
+// === Import des routes ===
 const authRoutes = require("./routes/authRoutes")(db);
 app.use('/api', authRoutes);
 
-// ✅ ICI : bon import, avec “termineRoutes”
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
-// ➕ Nouvelle route pour les vaccinations
 const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
 app.use("/api/vaccinations", vaccinationRoutes);
 
 const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
 app.use("/api/medikamente", medikamenteRoutes);
 
-
-
-// Démarrage du serveur
+// 🚀 Démarrage du serveur
 app.listen(4000, () => {
   console.log('🚀 Backend démarré sur http://localhost:4000');
 });
- 
