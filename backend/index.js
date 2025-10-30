@@ -4,7 +4,11 @@ const mysql = require('mysql2');
 require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:3000", // ton frontend
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }));
 app.use(express.json());
 
 // 🌍 Connexion MySQL hébergée en ligne
@@ -45,11 +49,20 @@ app.use('/api', authRoutes);
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
+
+// import nutritionroutes
+const nutritionRoutes = require("./routes/nutritionroutes")(db);
+app.use("/api/nutrition", nutritionRoutes);
+
 const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
 app.use("/api/vaccinations", vaccinationRoutes);
 
 const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
 app.use("/api/medikamente", medikamenteRoutes);
+
+const vitalsroutes = require("./routes/vitalsroutes")(db);
+app.use("/api/vitals", vitalsroutes);
+ 
 
 // 🚀 Démarrage du serveur
 app.listen(4000, () => {
