@@ -48,9 +48,18 @@ app.use('/api', authRoutes);
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
+
 // import nutritionroutes
 const nutritionRoutes = require("./routes/nutritionroutes")(db);
 app.use("/api/nutrition", nutritionRoutes);
+
+// ➕ Nouvelle route pour les vaccinations
+const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
+app.use("/api/vaccinations", vaccinationRoutes);
+
+const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
+app.use("/api/medikamente", medikamenteRoutes);
+ 
 
 
 

@@ -37,6 +37,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             >
               Termine
             </Link>
+
+            <Link
+  className="block px-3 py-2 rounded-md hover:bg-[#1b2338] hover:text-white transition duration-200"
+  href="/impfungen"
+>
+  Impfungen
+</Link>
+
+<Link
+  className="block px-3 py-2 rounded-md hover:bg-[#1b2338] hover:text-white transition duration-200"
+  href="/medikamente"
+>
+  Medikamente
+</Link>
+
+
           </nav>
         </aside>
       )}
