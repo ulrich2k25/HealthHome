@@ -108,22 +108,23 @@ module.exports = (db) => {
       }
 
       // Génère le token JWT
-      const token = jwt.sign(
-        { id: user.id, email: user.email },
-        process.env.JWT_SECRET || "secret_key_dev",
-        { expiresIn: "1h" }
-      );
+const token = jwt.sign(
+  { id: user.id, email: user.email },
+  process.env.JWT_SECRET || "secret_key_dev",
+  { expiresIn: "1h" }
+);
 
-      res.json({
-        message: "✅ Connexion réussie.",
-        token,
-        user: {
-          id: user.id,
-          vorname: user.vorname,
-          nachname: user.nachname,
-          email: user.email,
-        },
-      });
+// ✅ Réponse envoyée au frontend
+res.json({
+  message: "✅ Connexion réussie.",
+  token,           // clé du token
+  id: user.id,     // 🔹 on renvoie directement l'ID ici
+  user: {
+    vorname: user.vorname,
+    nachname: user.nachname,
+    email: user.email,
+  },
+});
     });
   });
 
