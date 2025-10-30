@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import scheduleNotification from "../../utils/notifications";
+
 
 type Termin = {
   _id?: string;
@@ -28,28 +30,32 @@ export default function TerminPage() {
     setItems(res.data || []);
   };
 
-  const save = async () => {
-    if (!form.title || !form.date || !form.time)
-      return alert("Titel, Datum, Uhrzeit sind obligatoires.");
+ const save = async () => {
+  if (!form.title || !form.date || !form.time)
+    return alert("Titel, Datum und Uhrzeit sind erforderlich.");
+
+  try {
+    // ➕ Enregistrement du rendez-vous
     await axios.post(`${API}/termin`, form);
+
+    // 🔔 Planification de la notification
+    const fullDateTime = `${form.date}T${form.time}`;
+    await scheduleNotification(
+      "📅 HealthHome - Termin",
+      `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
+      fullDateTime
+    );
+
+    // ✅ Réinitialisation du formulaire et rechargement
     setForm({ title: "", date: "", time: "", doctor: "", location: "" });
     load();
-    if ("Notification" in window) {
-      if (Notification.permission === "granted") {
-        new Notification("HealthHome", {
-          body: `Termin gespeichert: ${form.title} ${form.date} ${form.time}`,
-        });
-      } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(
-          (p) =>
-            p === "granted" &&
-            new Notification("HealthHome", {
-              body: "Benachrichtigung aktiviert",
-            })
-        );
-      }
-    }
-  };
+
+    console.log("✅ Termin gespeichert und Benachrichtigung geplant:", fullDateTime);
+  } catch (err) {
+    console.error("❌ Fehler beim Speichern oder bei der Benachrichtigung:", err);
+  }
+};
+
 
   useEffect(() => {
     load();
