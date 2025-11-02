@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useAutoSave } from "../lib/useAutoSave";
 
 export type MealType = "Frühstück" | "Mittagessen" | "Abendessen" | "Snack";
 
@@ -11,6 +12,8 @@ export type MealFormValues = {
   type: MealType;
   date?: string;
 };
+
+
 
 type Meal = {
   id: string;
@@ -35,6 +38,7 @@ export default function MealForm({ onAddMeal }: Props) {
     type: "Frühstück",
     date: "",
   });
+ useAutoSave("MealForm", meal, setMeal);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

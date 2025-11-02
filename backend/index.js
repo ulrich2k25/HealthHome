@@ -62,6 +62,10 @@ app.use("/api/medikamente", medikamenteRoutes);
 
 const vitalsroutes = require("./routes/vitalsroutes")(db);
 app.use("/api/vitals", vitalsroutes);
+
+const backupRoutes = require("./routes/backupRoutes")(db);
+app.use("/api/backup", backupRoutes);
+
  
 
 // 🚀 Démarrage du serveur

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useAutoSave } from "../lib/useAutoSave"; // Hook de sauvegarde automatique
+
 
 type VitalType = "herz" | "blutdruck" | "schlaf" | "schritte" | "blutzucker" | "temperatur";
 
@@ -16,6 +18,8 @@ export default function Vitalwerte({ onClose }: { onClose: () => void }) {
     datum: "",
   });
 
+  
+
   // Auto-remplir la date/heure actuelle
   useEffect(() => {
     if (!values.datum) {
@@ -24,6 +28,7 @@ export default function Vitalwerte({ onClose }: { onClose: () => void }) {
       setValues((prev) => ({ ...prev, datum: isoDate }));
     }
   }, [values.datum]);
+    useAutoSave("vitalwerte", values, setValues);
 
   //  Gérer la saisie
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

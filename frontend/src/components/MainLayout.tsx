@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAutoSave } from "../lib/useAutoSave";
+
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+useAutoSave("MainLayout", isLoggedIn, setIsLoggedIn);
 
   useEffect(() => {
     // Vérifie si un token est stocké (login effectué)
