@@ -87,7 +87,8 @@ export default function TerminPage() {
 
         <button
           onClick={save}
-          className="mt-4 bg-[#4F9DDE] hover:bg-[#3B82C4] transition px-5 py-2 rounded text-white font-semibold"
+                 
+          className=" mt-4 bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded-md text-white font-semibold"  
         >
           Speichern
         </button>

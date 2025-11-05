@@ -1,9 +1,9 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
 
-// ✅ Type pour les vaccinations
 type Vaccination = {
   id?: number | null;
   title: string;
@@ -27,7 +27,6 @@ export default function ImpfungenPage() {
   });
   const [isEditing, setIsEditing] = useState(false);
 
-  // 🔹 Charger les données
   const load = async () => {
     try {
       const res = await axios.get<Vaccination[]>(`${API}/vaccinations`);
@@ -37,7 +36,6 @@ export default function ImpfungenPage() {
     }
   };
 
-  // 🔹 Sauvegarder ou mettre à jour
   const save = async () => {
     if (!form.title || !form.date || !form.time)
       return alert("Titel, Datum und Uhrzeit sind erforderlich.");
@@ -59,14 +57,12 @@ export default function ImpfungenPage() {
       setForm({ id: null, title: "", doctor: "", date: "", time: "", reminder: "" });
       setIsEditing(false);
       load();
-
       console.log("✅ Impfung gespeichert und Benachrichtigung geplant:", fullDateTime);
     } catch (err) {
       console.error("❌ Fehler beim Speichern:", err);
     }
   };
 
-  // 🔹 Supprimer
   const remove = async (id: number | null | undefined) => {
     if (!window.confirm("Diese Impfung wirklich löschen?")) return;
     try {
@@ -77,7 +73,6 @@ export default function ImpfungenPage() {
     }
   };
 
-  // 🔹 Modifier
   const edit = (v: Vaccination) => {
     setForm({
       id: v.id,
@@ -96,10 +91,10 @@ export default function ImpfungenPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-gray-100 space-y-8 p-6">
+    <div className="min-h-screen bg-gray-50 text-gray-900 space-y-8 p-6">
       {/* --- Formulaire de création / édition --- */}
-      <div className="bg-[#12182b] border border-gray-700 rounded-2xl p-5 shadow-lg">
-        <h3 className="font-semibold text-xl mb-4 text-white">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-lg">
+        <h3 className="font-semibold text-xl mb-4 text-gray-900">
           {isEditing ? "Impfung bearbeiten" : "Neue Impfung hinzufügen"}
         </h3>
 
@@ -111,10 +106,10 @@ export default function ImpfungenPage() {
           }}
         >
           <label className="flex flex-col">
-            <span className="text-sm text-gray-300 mb-1">Impfung</span>
+            <span className="text-sm text-gray-700 mb-1">Impfung</span>
             <input
               type="text"
-              className="p-2 rounded bg-[#1b2338] text-white"
+              className="p-2 rounded border border-gray-300 text-gray-900"
               placeholder="Impfungstitel"
               aria-label="Impfungstitel"
               value={form.title}
@@ -123,10 +118,10 @@ export default function ImpfungenPage() {
           </label>
 
           <label className="flex flex-col">
-            <span className="text-sm text-gray-300 mb-1">Arzt</span>
+            <span className="text-sm text-gray-700 mb-1">Arzt</span>
             <input
               type="text"
-              className="p-2 rounded bg-[#1b2338] text-white"
+              className="p-2 rounded border border-gray-300 text-gray-900"
               placeholder="Arztname"
               aria-label="Arztname"
               value={form.doctor}
@@ -135,10 +130,10 @@ export default function ImpfungenPage() {
           </label>
 
           <label className="flex flex-col">
-            <span className="text-sm text-gray-300 mb-1">Datum</span>
+            <span className="text-sm text-gray-700 mb-1">Datum</span>
             <input
               type="date"
-              className="p-2 rounded bg-[#1b2338] text-white"
+              className="p-2 rounded border border-gray-300 text-gray-900"
               aria-label="Datum"
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -146,10 +141,10 @@ export default function ImpfungenPage() {
           </label>
 
           <label className="flex flex-col">
-            <span className="text-sm text-gray-300 mb-1">Uhrzeit</span>
+            <span className="text-sm text-gray-700 mb-1">Uhrzeit</span>
             <input
               type="time"
-              className="p-2 rounded bg-[#1b2338] text-white"
+              className="p-2 rounded border border-gray-300 text-gray-900"
               aria-label="Uhrzeit"
               value={form.time || ""}
               onChange={(e) => setForm({ ...form, time: e.target.value })}
@@ -157,10 +152,10 @@ export default function ImpfungenPage() {
           </label>
 
           <label className="flex flex-col">
-            <span className="text-sm text-gray-300 mb-1">Erinnerung</span>
+            <span className="text-sm text-gray-700 mb-1">Erinnerung</span>
             <input
               type="date"
-              className="p-2 rounded bg-[#1b2338] text-white"
+              className="p-2 rounded border border-gray-300 text-gray-900"
               aria-label="Erinnerung"
               value={form.reminder}
               onChange={(e) => setForm({ ...form, reminder: e.target.value })}
@@ -170,7 +165,7 @@ export default function ImpfungenPage() {
           <div className="col-span-5 flex items-center gap-3 mt-4">
             <button
               type="submit"
-              className="bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded text-white font-semibold"
+              className="bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded-md text-white font-semibold"
             >
               {isEditing ? "Aktualisieren" : "Speichern"}
             </button>
@@ -179,17 +174,10 @@ export default function ImpfungenPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setForm({
-                    id: null,
-                    title: "",
-                    doctor: "",
-                    date: "",
-                    time: "",
-                    reminder: "",
-                  });
+                  setForm({ id: null, title: "", doctor: "", date: "", time: "", reminder: "" });
                   setIsEditing(false);
                 }}
-                className="bg-gray-600 hover:bg-gray-700 transition px-5 py-2 rounded text-white font-semibold"
+                className="bg-gray-400 hover:bg-gray-500 transition px-5 py-2 rounded text-white font-semibold"
               >
                 Abbrechen
               </button>
@@ -199,15 +187,15 @@ export default function ImpfungenPage() {
       </div>
 
       {/* --- Liste des vaccinations --- */}
-      <div className="bg-[#12182b] border border-gray-700 rounded-2xl p-5 shadow-lg">
-        <h3 className="font-semibold text-xl mb-4 text-white">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-lg">
+        <h3 className="font-semibold text-xl mb-4 text-gray-900">
           Anstehende Impfungen
         </h3>
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-400 border-b border-gray-700">
+              <tr className="text-left text-gray-500 border-b border-gray-300">
                 <th className="p-2">Titel</th>
                 <th className="p-2">Arzt</th>
                 <th className="p-2">Datum</th>
@@ -220,30 +208,24 @@ export default function ImpfungenPage() {
               {items.map((v, i) => (
                 <tr
                   key={v.id ?? i}
-                  className="border-t border-gray-700 hover:bg-[#1b2338] transition"
+                  className="border-t border-gray-200 hover:bg-gray-100 transition"
                 >
-                  <td className="p-2 text-gray-100">{v.title}</td>
-                  <td className="p-2 text-gray-100">{v.doctor}</td>
-                  <td className="p-2 text-gray-100">
-                    {v.date ? v.date.split("T")[0] : "-"}
-                  </td>
-                  <td className="p-2 text-gray-100">
-                    {v.time || "-"}
-                  </td>
-                  <td className="p-2 text-gray-100">
-                    {v.reminder ? v.reminder.split("T")[0] : "-"}
-                  </td>
+                  <td className="p-2 text-gray-900">{v.title}</td>
+                  <td className="p-2 text-gray-900">{v.doctor}</td>
+                  <td className="p-2 text-gray-900">{v.date ? v.date.split("T")[0] : "-"}</td>
+                  <td className="p-2 text-gray-900">{v.time || "-"}</td>
+                  <td className="p-2 text-gray-900">{v.reminder ? v.reminder.split("T")[0] : "-"}</td>
                   <td className="p-2 flex gap-3">
                     <button
                       onClick={() => edit(v)}
-                      className="text-blue-400 hover:text-blue-600"
+                      className="text-blue-600 hover:text-blue-800"
                       title="Bearbeiten"
                     >
                       ✏️
                     </button>
                     <button
                       onClick={() => remove(v.id)}
-                      className="text-red-400 hover:text-red-600"
+                      className="text-red-600 hover:text-red-800"
                       title="Löschen"
                     >
                       🗑️
