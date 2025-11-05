@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
 
-
 type Termin = {
   _id?: string;
   title: string;
@@ -26,40 +25,90 @@ export default function TerminPage() {
     location: "",
   });
 
+  // ✅ Charger tous les rendez-vous
   const load = async () => {
     const res = await axios.get(`${API}/termin`);
     setItems(res.data || []);
   };
 
- const save = async () => {
-  if (!form.title || !form.date || !form.time)
-    return alert("Titel, Datum und Uhrzeit sind erforderlich.");
+  // ✅ Sauvegarder un nouveau rendez-vous et planifier la notification
+  const save = async () => {
+    if (!form.title || !form.date || !form.time)
+      return alert("Titel, Datum und Uhrzeit sind erforderlich.");
 
-  try {
-    // ➕ Enregistrement du rendez-vous
-    await axios.post(`${API}/termin`, form);
+    try {
+      // ➕ Enregistrement du rendez-vous
+      await axios.post(`${API}/termin`, form);
 
-    // 🔔 Planification de la notification
-    const fullDateTime = `${form.date}T${form.time}`;
-    await scheduleNotification(
-      "📅 HealthHome - Termin",
-      `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
-      fullDateTime
-    );
+      // 🔔 Planification locale
+      const fullDateTime = `${form.date}T${form.time}`;
+      const now = new Date();
+      const target = new Date(fullDateTime);
+      const delay = target.getTime() - now.getTime();
 
-    // ✅ Réinitialisation du formulaire et rechargement
-    setForm({ title: "", date: "", time: "", doctor: "", location: "" });
-    load();
+      console.log("📅 Notification prévue :", fullDateTime);
+      console.log("⏳ Délai (ms) :", delay);
 
-    console.log("✅ Termin gespeichert und Benachrichtigung geplant:", fullDateTime);
-  } catch (err) {
-    console.error("❌ Fehler beim Speichern oder bei der Benachrichtigung:", err);
-  }
-};
+      if (isNaN(target.getTime()) || delay <= 0) {
+        console.warn("⛔ La date est invalide ou déjà passée :", fullDateTime);
+      } else {
+        // 💾 Sauvegarde locale pour replanification après refresh
+        localStorage.setItem(
+          "pendingTerminNotification",
+          JSON.stringify({
+            title: "📅 HealthHome - Termin",
+            message: `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
+            dateTime: fullDateTime,
+          })
+        );
 
+        // 🔔 Planifie la notification (pendant que la page reste ouverte)
+        await scheduleNotification(
+          "📅 HealthHome - Termin",
+          `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
+          fullDateTime
+        );
 
+        console.log(
+          `✅ Notification programmée pour ${target.toLocaleString("de-DE", {
+            timeZone: "Europe/Berlin",
+          })}`
+        );
+      }
+
+      // ✅ Réinitialisation du formulaire et rechargement
+      setForm({ title: "", date: "", time: "", doctor: "", location: "" });
+      load();
+    } catch (err) {
+      console.error("❌ Fehler beim Speichern oder bei der Benachrichtigung:", err);
+    }
+  };
+
+  // ✅ Replanification automatique après un refresh
   useEffect(() => {
     load();
+
+    const stored = JSON.parse(localStorage.getItem("pendingTerminNotification") || "null");
+    if (stored) {
+      const now = new Date().getTime();
+      const target = new Date(stored.dateTime).getTime();
+
+      if (now >= target) {
+        // 🔔 Si le moment est déjà arrivé, on notifie immédiatement
+        new Notification(stored.title, { body: stored.message });
+        localStorage.removeItem("pendingTerminNotification");
+      } else {
+        // ⏳ Sinon on reprogramme
+        const delay = target - now;
+        console.log(
+          `⏳ Replanification Termin dans ${Math.round(delay / 1000)}s`
+        );
+        setTimeout(() => {
+          new Notification(stored.title, { body: stored.message });
+          localStorage.removeItem("pendingTerminNotification");
+        }, delay);
+      }
+    }
   }, []);
 
   return (
@@ -115,7 +164,11 @@ export default function TerminPage() {
                   className="border-t border-gray-200 hover:bg-[#E3ECF3] transition"
                 >
                   <td className="p-2">{t.title}</td>
-                  <td className="p-2">{t.date}</td>
+                  <td className="p-2">
+                    {new Date(t.date).toLocaleDateString("sv-SE", {
+                      timeZone: "Europe/Berlin",
+                    })}
+                  </td>
                   <td className="p-2">{t.time}</td>
                   <td className="p-2">{t.doctor}</td>
                   <td className="p-2">{t.location}</td>

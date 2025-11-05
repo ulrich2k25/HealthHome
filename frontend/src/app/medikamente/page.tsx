@@ -25,29 +25,92 @@ export default function MedikamentePage() {
     taken: false,
   });
 
+  // ✅ Charger tous les médicaments
   const load = async () => {
     const res = await axios.get<Medikament[]>(`${API}/medikamente`);
     setItems(res.data || []);
   };
 
+  // ✅ Sauvegarder un médicament + planifier la notification
   const save = async () => {
-    if (!form.name || !form.time) return alert("Name und Uhrzeit sind erforderlich.");
+    if (!form.name || !form.time)
+      return alert("Name und Uhrzeit sind erforderlich.");
 
     await axios.post(`${API}/medikamente`, form);
 
-    const dateString = form.date ? form.date : new Date().toISOString().split("T")[0];
+    // 1️⃣ On prend la date saisie ou la date d'aujourd'hui
+    const dateString = form.date
+      ? form.date
+      : new Date().toISOString().split("T")[0];
     const fullDateTime = `${dateString}T${form.time}`;
+    const now = new Date();
+    const target = new Date(fullDateTime);
+    const delay = target.getTime() - now.getTime();
 
-    await scheduleNotification(
-      "💊 HealthHome",
-      `Vergessen Sie nicht, Ihre Medikamente einzunehmen: ${form.name}`,
-      fullDateTime
-    );
+    console.log("💊 Notification prévue :", fullDateTime);
+    console.log("⏳ Délai (ms) :", delay);
 
-    setForm({ name: "", dose: "", time: "", taken: false });
+    // 2️⃣ Vérifie si la date est future
+    if (isNaN(target.getTime()) || delay <= 0) {
+      console.warn("⛔ La date est invalide ou déjà passée :", fullDateTime);
+    } else {
+      // 💾 Sauvegarde dans localStorage pour replanifier après refresh
+      localStorage.setItem(
+        "pendingMedNotification",
+        JSON.stringify({
+          title: "💊 HealthHome",
+          message: `Vergessen Sie nicht, Ihre Medikamente einzunehmen : ${form.name}`,
+          dateTime: fullDateTime,
+        })
+      );
+
+      // 🔔 Notification immédiate (si la page reste ouverte)
+      await scheduleNotification(
+        "💊 HealthHome",
+        `Vergessen Sie nicht, Ihre Medikamente einzunehmen : ${form.name}`,
+        fullDateTime
+      );
+
+      console.log(
+        `✅ Notification programmée pour ${target.toLocaleString("de-DE", {
+          timeZone: "Europe/Berlin",
+        })}`
+      );
+    }
+
+    // 🧹 Vide le formulaire et recharge la liste
+    setForm({ name: "", dose: "", date: "", time: "", taken: false });
     load();
   };
 
+  // ✅ Replanifie la notification après un refresh de la page
+  useEffect(() => {
+    load();
+
+    const stored = JSON.parse(localStorage.getItem("pendingMedNotification") || "null");
+    if (stored) {
+      const now = new Date().getTime();
+      const target = new Date(stored.dateTime).getTime();
+
+      if (now >= target) {
+        // 🔔 Si l'heure est passée, on notifie tout de suite
+        new Notification(stored.title, { body: stored.message });
+        localStorage.removeItem("pendingMedNotification");
+      } else {
+        // ⏳ Sinon on reprogramme la notification
+        const delay = target - now;
+        console.log(
+          `⏳ Replanification médicament dans ${Math.round(delay / 1000)}s`
+        );
+        setTimeout(() => {
+          new Notification(stored.title, { body: stored.message });
+          localStorage.removeItem("pendingMedNotification");
+        }, delay);
+      }
+    }
+  }, []);
+
+  // ✅ Actions : pris, oublié, supprimé
   const markTaken = async (id: number) => {
     await axios.put(`${API}/medikamente/${id}/taken`);
     load();
@@ -62,10 +125,6 @@ export default function MedikamentePage() {
     await axios.delete(`${API}/medikamente/${id}`);
     load();
   };
-
-  useEffect(() => {
-    load();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 space-y-8 p-6">
@@ -143,6 +202,7 @@ export default function MedikamentePage() {
                   {m.dose || "–"} • {m.date ? m.date.split("T")[0] : "-"} um {m.time?.substring(0, 5)}
                 </p>
               </div>
+
               <div className="flex gap-2 mt-3 md:mt-0">
                 <button
                   onClick={() => markTaken(m.id!)}
