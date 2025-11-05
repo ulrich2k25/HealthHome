@@ -1,7 +1,7 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Vitalwerte from "../../components/Vitalwerte";
 import {
   ResponsiveContainer,
   LineChart,
@@ -23,8 +23,8 @@ import {
   Thermometer,
 } from "lucide-react";
 
-// 📊 Données simulées
-const herzfrequenzData = [
+// Données simulées
+const mock = [
   { time: "00:00", bpm: 62 },
   { time: "04:00", bpm: 58 },
   { time: "08:00", bpm: 72 },
@@ -64,91 +64,139 @@ const kalorienData = [
   { day: "So", kcal: 2000 },
 ];
 
+interface Meal {
+  id?: number;
+  name: string;
+  amount?: string;
+  calories: string;
+  time?: string;
+  type: string;
+  date?: string;
+}
+
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<"herz" | "schlaf" | "schritte" | "kalorien">("herz");
+  const [activeTab, setActiveTab] = useState<
+    "herz" | "schlaf" | "schritte" | "kalorien"
+  >("herz");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const router = useRouter();
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [meal, setMeal] = useState<Meal>({
+    name: "",
+    amount: "",
+    calories: "",
+    time: "",
+    type: "Frühstück",
+  });
+  const [vitals, setVitals] = useState<any[]>([]);
+  const [showMealModal, setShowMealModal] = useState(false);
+  const [showVitalModal, setShowVitalModal] = useState(false);
+  const [data, setData] = useState(mock);
 
+  const router = useRouter();
+  const API_URL = "http://localhost:4000";
+
+  // Vérification du token
   useEffect(() => {
-    const email = localStorage.getItem("email");
-    if (!email) router.push("/login");
+    const token = localStorage.getItem("token");
+    if (!token) router.push("/login");
     else setIsAuthorized(true);
     setCheckingAuth(false);
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("email");
-    router.push("/login");
+  // Charger les BPM
+  useEffect(() => {
+    setData(mock);
+  }, []);
+
+  // Charger les vitalwerte depuis le backend
+  useEffect(() => {
+    const fetchVitals = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/vitals`);
+        const data = await res.json();
+        setVitals(data);
+      } catch (err) {
+        console.error("Fehler beim Laden der Vitalwerte:", err);
+      }
+    };
+    fetchVitals();
+  }, []);
+
+  // Charger les meals depuis le backend
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/nutrition`);
+        const data = await res.json();
+        setMeals(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Erreur fetch meals:", err);
+        setMeals([]);
+      }
+    };
+    fetchMeals();
+  }, []);
+
+  // Changement de formulaire
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setMeal((prev) => ({ ...prev, [name]: value }));
   };
+
+  // Ajouter un repas
+  const handleAddMeal = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const mealWithDate = { ...meal, date: new Date().toISOString().split("T")[0] };
+    if (!meal.name || !meal.calories) return;
+    try {
+      const res = await fetch(`${API_URL}/api/nutrition`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mealWithDate),
+      });
+      const newMeal = await res.json();
+      setMeals((prev) => [...prev, newMeal]);
+      setMeal({ name: "", amount: "", calories: "", time: "", type: "Frühstück" });
+      setShowMealModal(false);
+    } catch (err) {
+      console.error("Erreur ajout meal:", err);
+    }
+  };
+
+  const totalCalories = Array.isArray(meals)
+    ? meals.reduce((sum, m) => sum + Number(m.calories || 0), 0)
+    : 0;
 
   const goToProfile = () => router.push("/user-profile");
 
-  if (checkingAuth)
+  if (checkingAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-800">
         <p>Überprüfung der Anmeldung...</p>
       </div>
     );
+  }
+
   if (!isAuthorized) return null;
 
   const renderChart = () => {
     switch (activeTab) {
       case "herz":
         return (
-          <>
-            <h3 className="text-sm text-gray-500 mb-2">Herzfrequenz Heute</h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={herzfrequenzData}>
-                <XAxis dataKey="time" stroke="#4b5563" />
-                <YAxis domain={[50, 90]} stroke="#4b5563" />
-                <Tooltip />
-                <Area type="monotone" dataKey="bpm" stroke="#dc2626" fill="#dc2626" fillOpacity={0.25} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </>
+          <AreaChartWrapper data={mock} dataKey="bpm" stroke="#dc2626" fill="#dc2626" />
         );
       case "schlaf":
         return (
-          <>
-            <h3 className="text-sm text-gray-500 mb-2">Schlafdauer (h)</h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={schlafData}>
-                <XAxis dataKey="day" stroke="#4b5563" />
-                <YAxis domain={[0, 10]} stroke="#4b5563" />
-                <Tooltip />
-                <Bar dataKey="hours" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </>
+          <BarChartWrapper data={schlafData} dataKey="hours" stroke="#3b82f6" />
         );
       case "schritte":
         return (
-          <>
-            <h3 className="text-sm text-gray-500 mb-2">Tägliche Schritte</h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={schritteData}>
-                <XAxis dataKey="day" stroke="#4b5563" />
-                <YAxis stroke="#4b5563" />
-                <Tooltip />
-                <Line type="monotone" dataKey="steps" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </>
+          <LineChartWrapper data={schritteData} dataKey="steps" stroke="#16a34a" />
         );
       case "kalorien":
         return (
-          <>
-            <h3 className="text-sm text-gray-500 mb-2">Kalorienverbrauch (kcal)</h3>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={kalorienData}>
-                <XAxis dataKey="day" stroke="#4b5563" />
-                <YAxis stroke="#4b5563" />
-                <Tooltip />
-                <Area type="monotone" dataKey="kcal" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </>
+          <AreaChartWrapper data={kalorienData} dataKey="kcal" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.3} />
         );
     }
   };
@@ -163,10 +211,9 @@ export default function Dashboard() {
         >
           👤 <span>Profil</span>
         </button>
-        
       </div>
 
-      {/* Titre de section */}
+      {/* Titre */}
       <h2 className="text-xl font-semibold text-gray-700 mb-2">🩺 Gesundheitsübersicht</h2>
 
       {/* Cartes de santé */}
@@ -189,30 +236,50 @@ export default function Dashboard() {
               activeTab === tab ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            {tab === "herz" ? "Herzfrequenz" : tab === "schlaf" ? "Schlaf" : tab === "schritte" ? "Schritte" : "Kalorien"}
+            {tab === "herz"
+              ? "Herzfrequenz"
+              : tab === "schlaf"
+              ? "Schlaf"
+              : tab === "schritte"
+              ? "Schritte"
+              : "Kalorien"}
           </button>
         ))}
       </div>
+
       {/* Graphique dynamique */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4 h-64 shadow-sm mt-4">
         {renderChart()}
+        <button
+          onClick={() => setShowVitalModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mt-2"
+        >
+          + Vitalwerte
+        </button>
+        {showVitalModal && <Vitalwerte onClose={() => setShowVitalModal(false)} />}
       </div>
+
+      {/* Suivi repas */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowMealModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+        >
+          <span className="text-lg font-bold">+</span> Mahlzeit
+        </button>
+      </div>
+
+      {showMealModal && (
+        <MealModal meal={meal} handleChange={handleChange} handleAddMeal={handleAddMeal} onClose={() => setShowMealModal(false)} />
+      )}
+
+      <MealList meals={meals} totalCalories={totalCalories} />
     </div>
   );
 }
 
 // 🧩 Composant carte de santé
-function HealthCard({
-  title,
-  value,
-  time,
-  icon,
-}: {
-  title: string;
-  value: string;
-  time: string;
-  icon: React.ReactNode;
-}) {
+function HealthCard({ title, value, time, icon }: { title: string; value: string; time: string; icon: React.ReactNode; }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md flex flex-col justify-between h-40">
       <div className="flex justify-between items-center mb-2">
@@ -221,6 +288,122 @@ function HealthCard({
       </div>
       <div className="text-2xl font-bold text-gray-800">{value}</div>
       <div className="text-xs text-gray-500 mt-1">{time}</div>
+    </div>
+  );
+}
+
+// Wrappers graphiques
+function AreaChartWrapper({ data, dataKey, stroke, fill, fillOpacity }: any) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data}>
+        <XAxis dataKey={data[0].time ? "time" : "day"} stroke="#4b5563" />
+        <YAxis stroke="#4b5563" />
+        <Tooltip />
+        <Area type="monotone" dataKey={dataKey} stroke={stroke} fill={fill} fillOpacity={fillOpacity || 0.25} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function LineChartWrapper({ data, dataKey, stroke }: any) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data}>
+        <XAxis dataKey="day" stroke="#4b5563" />
+        <YAxis stroke="#4b5563" />
+        <Tooltip />
+        <Line type="monotone" dataKey={dataKey} stroke={stroke} strokeWidth={2} dot={{ r: 3 }} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function BarChartWrapper({ data, dataKey, stroke }: any) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data}>
+        <XAxis dataKey="day" stroke="#4b5563" />
+        <YAxis stroke="#4b5563" />
+        <Tooltip />
+        <Bar dataKey={dataKey} fill={stroke} radius={[8, 8, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+// Modal Meal
+function MealModal({ meal, handleChange, handleAddMeal, onClose }: any) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div className="bg-gray-900 p-6 rounded-2xl w-full max-w-md shadow-xl">
+        <h2 className="text-xl font-semibold text-white mb-4">Neue Mahlzeit</h2>
+        <form onSubmit={handleAddMeal} className="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-3">
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="flex flex-col">
+              <label htmlFor="meal-name" className="text-gray-400 text-sm mb-1">Mahlzeit</label>
+              <input id="meal-name" name="name" value={meal.name} onChange={handleChange} placeholder="Mahlzeit" title="Mahlzeit" className="p-2 rounded-lg bg-gray-800 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="meal-amount" className="text-gray-400 text-sm mb-1">Menge</label>
+              <input id="meal-amount" name="amount" value={meal.amount} onChange={handleChange} placeholder="Menge (g/ml)" title="Menge" className="p-2 rounded-lg bg-gray-800 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="meal-calories" className="text-gray-400 text-sm mb-1">Kalorien</label>
+              <input id="meal-calories" type="number" name="calories" value={meal.calories} onChange={handleChange} placeholder="Kalorien" title="Kalorien" className="p-2 rounded-lg bg-gray-800 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="meal-time" className="text-gray-400 text-sm mb-1">Uhrzeit</label>
+              <input id="meal-time" type="time" name="time" value={meal.time} onChange={handleChange} title="Uhrzeit" className="p-2 rounded-lg bg-gray-800 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="meal-type" className="text-gray-400 text-sm mb-1">Typ</label>
+              <select id="meal-type" name="type" value={meal.type} onChange={handleChange} title="Typ" className="p-2 rounded-lg bg-gray-800 text-white">
+                <option>Frühstück</option>
+                <option>Mittagessen</option>
+                <option>Abendessen</option>
+                <option>Snack</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white w-full">Hinzufügen</button>
+        </form>
+        <button onClick={onClose} className="mt-4 text-gray-300 hover:text-white underline text-sm">Abbrechen</button>
+      </div>
+    </div>
+  );
+}
+
+// Liste des repas
+function MealList({ meals, totalCalories }: any) {
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl space-y-4 shadow-lg w-full min-h-96">
+        <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700 pb-2">Tägliche Mahlzeiten</h3>
+        {meals.length === 0 ? (
+          <p className="text-gray-500 text-center mt-10">Keine Einträge</p>
+        ) : (
+          <ul className="space-y-3 overflow-y-auto max-h-80 pr-2">
+            {meals.map((m: Meal, i: number) => (
+              <li key={m.id || i} className="flex items-center justify-between bg-gray-800 hover:bg-gray-700 transition p-3 rounded-lg text-sm">
+                <div>
+                  {m.date && <div className="mr-2 text-xs text-gray-400">{new Date(m.date).toLocaleDateString()}</div>}
+                  <div className="flex items-center gap-2">
+                    {m.time && <span className="text-sm text-gray-300">{m.time}</span>}
+                    <span className="font-medium text-white">{m.name}</span>
+                    <span className="ml-2 text-xs text-gray-400">({m.type})</span>
+                    {m.amount && <span className="ml-2 text-xs text-gray-500">— {m.amount}</span>}
+                  </div>
+                </div>
+                <div className="font-semibold text-green-400">{m.calories} kcal</div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="text-right text-xl font-bold mt-4 text-green-500 border-t border-gray-700 pt-2">
+          Gesamt: {totalCalories} kcal
+        </div>
+      </div>
     </div>
   );
 }
