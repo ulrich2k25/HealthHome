@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors({
-    origin: "http://localhost:3000", // ton frontend
+    origin: "http://localhost:3001", // ton frontend
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }));
@@ -13,6 +13,7 @@ app.use(express.json());
 
 // 🌍 Connexion MySQL hébergée en ligne
 const db = mysql.createConnection({
+  
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -45,6 +46,17 @@ app.get('/api/healthcheck', (req, res) => {
 // === Import des routes ===
 const authRoutes = require("./routes/authRoutes")(db);
 app.use('/api', authRoutes);
+
+// ✅ === Import de la route du profil utilisateur ===
+const userProfileRoutes = require('./routes/userroutes')(db);
+app.use('/api/user', userProfileRoutes);
+
+const editProfileRoutes = require('./routes/editprofileroutes')(db);
+app.use('/api/user', editProfileRoutes);
+
+const diagnosisRoutes = require("./routes/diagnosisRoutes")(db);
+app.use("/api/diagnosis", diagnosisRoutes);
+
 
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
