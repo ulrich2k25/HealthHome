@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
-import { useAutoSave } from "../../lib/useAutoSave";
 
 // ✅ 1. Définis ton type Vaccination une seule fois
 type Vaccination = {
@@ -20,7 +19,6 @@ export default function ImpfungenPage() {
   // ✅ 2. On précise que le state items contient un tableau de Vaccination
   const [items, setItems] = useState<Vaccination[]>([]);
 
-  useAutoSave("impfungen", items, setItems, "http://localhost:4000/api/backup");
 
 
   // ✅ 3. Même chose pour le formulaire
