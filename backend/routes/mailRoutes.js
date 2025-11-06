@@ -186,6 +186,12 @@ router.post("/send-data", async (req, res) => {
       .promise()
       .query("SELECT * FROM diagnoses where user_id = ?", [userId]);
 
+      const [malhzeiten] = await db
+      .promise()
+      .query("SELECT * FROM nutrition where user_id = ?", [userId]);
+
+      
+
     // --- Dossier temporaire ---
     const tempDir = path.join(__dirname, "../temp");
     if (!fs.existsSync(tempDir)) {
