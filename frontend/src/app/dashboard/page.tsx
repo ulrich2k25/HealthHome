@@ -250,39 +250,35 @@ function DownloadSection() {
   // =========================
   // 📧 Fonction pour envoyer le fichier par mail au médecin
   // =========================
+  const [selectedFormat, setSelectedFormat] = useState("pdf");
+
   const sendMailToDoctor = async () => {
     // vérifie que l’utilisateur est connecté
     if (!userId) return alert("User ID not found!");
     // vérifie qu’un e-mail a bien été saisi
-    if (!doctorEmail) return alert("Please enter doctor email.");
+    if (!doctorEmail) return alert("Bitte E-Mail-Adresse des Arztes eingeben!");
 
     try {
       // envoie une requête POST vers le backend
       // (on la créera ensuite dans exportRoutes.js)
-      const res = await fetch("http://localhost:4000/api/export/send-email", {
+      const response = await fetch("http://localhost:4000/api/send-data", {
         method: "POST", // méthode HTTP
         headers: { "Content-Type": "application/json" }, // on envoie du JSON
         body: JSON.stringify({
-          userId: userId, // ID du patient
-          email: doctorEmail, // email du médecin
-        }),
+        userId, // ID du patient
+        doctorEmail, // E-mail du médecin
+        format: selectedFormat, // "pdf" ou "csv"
+      }),
       });
 
       // si le backend répond avec une erreur
-      if (!res.ok) {
-        return alert("Error while sending email.");
-      }
-
-      // si tout va bien
-      alert("Email sent to doctor ✅");
-      // on ferme la boîte d’envoi de mail
-      setShowMailBox(false);
-      // on vide le champ email
-      setDoctorEmail("");
-    } catch (err) {
-      console.error(err);
-      alert("Server error while sending email.");
-    }
+      if (!response.ok) throw new Error("Fehler beim Senden der E-Mail");
+    alert("✅ E-Mail wurde erfolgreich gesendet!");
+    setShowMailBox(false);
+  } catch (error) {
+    console.error(error);
+    alert("❌ Fehler beim Senden der E-Mail.");
+  }
   };
 
   // =========================
@@ -340,15 +336,11 @@ function DownloadSection() {
               CSV
             </button>
           </div>
-          <div className="flex gap-3 mb-3">
-  <button onClick={downloadPDF}>PDF</button>
-  <button onClick={downloadCSV}>CSV</button>
-</div>
 
 {/* 🔸 AJOUT : bouton pour fermer la boîte sans rien faire */}
 <button
   onClick={() => setShowExportBox(false)}
-  className="w-full border border-gray-300 rounded-lg py-2 hover:bg-gray-50 transition"
+      className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg py-2 transition"
 >
   Abbrechen
 </button>
@@ -369,15 +361,27 @@ function DownloadSection() {
             value={doctorEmail}
             onChange={(e) => setDoctorEmail(e.target.value)}
             placeholder="arzt@example.de"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 
+             bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-500"
           />
+
+          <p className="text-gray-700 font-semibold mb-3">Format wählen:</p>
+<select
+  value={selectedFormat}
+  onChange={(e) => setSelectedFormat(e.target.value)}
+  className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 bg-white text-gray-900"
+>
+  <option value="pdf">PDF</option>
+  <option value="csv">CSV</option>
+</select>
+
 
           {/* boutons pour annuler ou envoyer */}
           <div className="flex gap-3 justify-end">
   {/* 🔸 AJOUT : ferme la box mail quand on clique sur Abbrechen */}
   <button
     onClick={() => setShowMailBox(false)}
-    className="px-4 py-2 rounded-lg border hover:bg-gray-50 transition"
+    className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg py-2 transition"
   >
     Abbrechen
   </button>

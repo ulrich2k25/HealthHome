@@ -23,10 +23,11 @@ const router = express.Router();
 // ========================
 
 const db = mysql.createConnection({
-  host: 'localhost',     // ton serveur local (WAMP)
-  user: 'root',          // ton utilisateur MySQL
-  password: 'Idrelle-21',// ton mot de passe MySQL
-  database: 'software',  // ta base de données
+ host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
 });
 
 
