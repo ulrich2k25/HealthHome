@@ -9,6 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+
+    "axios": "^1.12.2",
+    "next": "15.5.4",
+    "nodemo": "^1.0.0",
+
     "axios": "^1.12.2",
     "next": "^16.0.0",
     "react": "^19.1.0",
