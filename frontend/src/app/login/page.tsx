@@ -1,8 +1,9 @@
 "use client";
-import React from "react";
-import { useState } from "react";
+
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { useAutoSave } from "../../lib/useAutoSave";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
+  useAutoSave("LoginPage", { email, password }, (data) => {
+    setEmail(data.email);
+    setPassword(data.password);
+  }, "http://localhost:4000/api/backup");
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -20,10 +26,8 @@ export default function LoginPage() {
       });
 
       setMessage("✅ Connexion réussie !");
-      // 🔐 Enregistre le token dans le localStorage
-      localStorage.setItem("token", res.data.token);
-
-      // ✅ Redirection automatique vers le Dashboard
+      localStorage.setItem("email", email);
+      localStorage.setItem("authToken", res.data.token);
       router.push("/dashboard");
     } catch (err: any) {
       if (err.response?.status === 401) setMessage("❌ Mot de passe incorrect.");
@@ -33,45 +37,67 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white">
+    <div
+      className="flex flex-col items-center justify-center min-h-screen text-[#1F2937]"
+      style={{ backgroundColor: "#F0F4F8" }}
+    >
       <h2 className="text-2xl font-semibold mb-6">Connexion HealthHome</h2>
 
       <form
         onSubmit={handleLogin}
-        className="bg-gray-900 p-8 rounded-lg shadow-lg w-full max-w-sm space-y-4"
+        className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm space-y-4"
       >
         <div>
-          <label className="block mb-1">Email</label>
+          <label htmlFor="email" className="block mb-1 text-sm font-medium">
+            Email
+          </label>
           <input
+            id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-gray-800 text-white"
+            className="w-full px-3 py-2 rounded bg-[#E3ECF3] text-[#1F2937] placeholder-gray-500"
+            placeholder="Entrez votre email"
             required
           />
         </div>
 
         <div>
-          <label className="block mb-1">Mot de passe</label>
+          <label htmlFor="password" className="block mb-1 text-sm font-medium">
+            Mot de passe
+          </label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-gray-800 text-white"
+            className="w-full px-3 py-2 rounded bg-[#E3ECF3] text-[#1F2937] placeholder-gray-500"
+            placeholder="Entrez votre mot de passe"
             required
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-semibold"
+          className="w-full bg-[#4F9DDE] hover:bg-[#3B82C4] py-2 rounded font-semibold text-white"
         >
           Anmelden
         </button>
       </form>
 
-      {message && <p className="mt-4 text-sm text-gray-300">{message}</p>}
+      {message && (
+        <p
+          className="mt-4 text-sm"
+          style={{
+            color:
+              message.includes("✅") ? "#388E3C" :
+              message.includes("❌") ? "#D32F2F" :
+              "#F57C00",
+          }}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 }
-

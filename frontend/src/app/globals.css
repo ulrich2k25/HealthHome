@@ -1,12 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --color-background: #ffffff;
-  --color-foreground: #171717;
+  --color-background: #f7f8fa;   /* gris très clair, doux */
+  --color-foreground: #1e293b;   /* texte principal gris foncé */
+  
+  --color-muted: #4b5563;        /* gris pour textes secondaires */
+  --color-border: #e5e7eb;       /* gris clair pour bordures */
+  --color-success: #16a34a;      /* vert doux pour succès/messages positifs */
+  --color-warning: #f59e0b;      /* jaune doux pour alertes */
+  --color-error: #dc2626;        /* rouge pas trop saturé pour alertes */
 }
 
+/* Styles globaux */
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  font-size: 16px;
+  margin: 0;
+  padding: 0;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-foreground);
+  font-weight: 600;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+

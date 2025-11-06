@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Vitalwerte from "../../components/Vitalwerte";
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -43,11 +45,16 @@ export default function Dashboard() {
     time: "",
     type: "Frühstück",
   });
+   const [vitals, setVitals] = useState<any[]>([]);
 
+  // Pour gérer l'affichage et fermer la fenetre mahlzeit
+   const [showMealModal, setShowMealModal] = useState(false);
+   const [showVitalModal, setShowVitalModal] = useState(false);//nouvelle fenetre vitalwerte 
   const router = useRouter();
   const API_URL = "http://localhost:4000"; // <-- backend
+   
 
-  // ✅ Vérifie token
+  //  Vérifie token
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) router.push("/login");
@@ -55,17 +62,30 @@ export default function Dashboard() {
     setCheckingAuth(false);
   }, [router]);
 
-  // ✅ Charger les BPM
+  //  Charger les BPM
   useEffect(() => {
     setData(mock);
   }, []);
 
-  // ✅ Déconnexion
+  // Déconnexion
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/login");
   };
-
+ // Charger les vitalwerte depuis le backend
+useEffect(() => {
+  const fetchVitals = async () => {
+    try {
+      const res = await fetch("http://localhost:4000/api/vitals");
+      const data = await res.json();
+      console.log("✅ Vitalwerte geladen:", data);
+      setVitals(data);
+    } catch (err) {
+      console.error("Fehler beim Laden der Vitalwerte:", err);
+    }
+  };
+  fetchVitals();
+}, []);
   
   // 🔹 Charger les repas depuis le backend
 useEffect(() => {
@@ -97,13 +117,20 @@ useEffect(() => {
   // 🔹 Ajouter un repas (POST vers backend)
   const handleAddMeal = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+// ajouter la date actuelle si non fournie(automatiquement)
+   const mealWithDate = {
+  ...meal,
+  date: new Date().toISOString().split("T")[0],
+};
     if (!meal.name || !meal.calories) return;
 
     try {
       const res = await fetch(`${API_URL}/api/nutrition`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(meal),
+       body: JSON.stringify(mealWithDate),
+
       });
       const newMeal = await res.json();
 
@@ -140,6 +167,23 @@ useEffect(() => {
           Abmelden
         </button>
       </div>
+
+    {/*  Bouton Vitalwerte */}
+        <button
+          onClick={() => setShowVitalModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+          +Vitalwerte
+
+        </button>
+     
+
+       {/*  Fenêtre Vitalwerte */}
+     {/* Fenêtre Vitalwerte (réelle) */}
+{showVitalModal && (
+  <Vitalwerte onClose={() => setShowVitalModal(false)} />
+)}
+
+
 
       {/* Indicateurs */}
       <div className="grid md:grid-cols-4 gap-4">
@@ -180,8 +224,27 @@ useEffect(() => {
         </ResponsiveContainer>
       </div>
 
+      {/* Bouton pour ouvrir le formulaire de nouvelle Mahlzeit */}
+<div className="flex justify-end">
+  <button
+  onClick={() => setShowMealModal(true)}
+  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+>
+  <span className="text-lg font-bold">+</span> Mahlzeit
+</button>
+
+</div>
+
+
       {/* Suivi repas */}
       <div className="grid md:grid-cols-2 gap-4">
+
+{showMealModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+    <div className="bg-gray-900 p-6 rounded-2xl w-full max-w-md shadow-xl">
+      <h2 className="text-xl font-semibold text-white mb-4">Neue Mahlzeit</h2>
+
+
         {/* Formulaire */}
         <form
           onSubmit={handleAddMeal}
@@ -238,28 +301,56 @@ useEffect(() => {
           </button>
         </form>
 
+<button
+        onClick={() => setShowMealModal(false)}
+        className="mt-4 text-gray-300 hover:text-white underline text-sm"
+      >
+        Abbrechen
+      </button>
+    </div>
+  </div>
+)}
+
         {/* Liste repas */}
-        <div className="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-3">
-          <h3 className="text-sm text-gray-400">Tägliche Mahlzeiten</h3>
+        <div  className="bg-gray-900 border border-gray-800 p-6 rounded-2xl space-y-4 shadow-lg w-full min-h-96">
+          <h3 className="text-lg font-semibold text-gray-200 border-b border-gray-700 pb-2">Tägliche Mahlzeiten</h3>
           {meals.length === 0 ? (
-            <p className="text-gray-500">Keine Einträge</p>
+            <p className="text-gray-500 text-center mt-10">Keine Einträge</p>
           ) : (
-            <ul className="space-y-2">
-              {meals.map((m, i) => (
-                <li
-                  key={m.id || i}
-                  className="flex justify-between bg-gray-800 p-2 rounded-lg text-sm"
-                >
-                  <span>
-                    {m.time && <span>{m.time} </span>}
-                    {m.name} ({m.type})
-                  </span>
-                  <span className="font-semibold">{m.calories} kcal</span>
-                </li>
-              ))}
-            </ul>
+            <ul className="space-y-3 overflow-y-auto max-h-80 pr-2">
+  {meals.map((m, i) => (
+    <li
+      key={m.id || i}
+      className="flex items-center justify-between bg-gray-800 hover:bg-gray-700 transition p-3 rounded-lg text-sm"
+    >
+      <div>
+        {/* 🕒 Afficher la date si elle existe */}
+        {m.date && (
+          < div className="mr-2 text-xs text-gray-400">
+            {new Date(m.date).toLocaleDateString()}
+          </div>
+        )}
+        {/* 🕓 Heure */}
+         <div className="flex items-center gap-2">
+        {m.time && <span className="text-sm text-gray-300">{m.time}</span>}
+        {/* 🍽 Nom du repas */}
+        <span className="font-medium text-white">{m.name}</span>
+        {/* 📍 Type */}
+        <span className="ml-2 text-xs text-gray-400">({m.type})</span>
+        {/* ⚖️ Quantité */}
+        {m.amount && (
+          <span className="ml-2 text-xs text-gray-500">— {m.amount}</span>
+        )}
+      </div>
+      </div>
+      <div className="font-semibold text-green-400">{m.calories} kcal</div>
+      
+    </li>
+  ))}
+</ul>
+
           )}
-          <div className="text-right text-lg font-bold mt-3">
+          <div className="text-right text-xl font-bold mt-4 text-green-500 border-t border-gray-700 pt-2">
             Gesamt: {totalCalories} kcal
           </div>
         </div>
