@@ -2,19 +2,27 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation"; // 👈 pour savoir sur quelle page on est
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
+
+  // Liste des pages publiques
+  const publicPages = ["/login", "/register", "/verifyemail"];
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
   }, []);
 
+  // Si on est sur une page publique, on cache la sidebar et l’en-tête
+  const hideSidebar = publicPages.includes(pathname) || !isLoggedIn;
+
   return (
-    <div className={`min-h-screen ${isLoggedIn ? "grid grid-cols-[240px_1fr]" : ""}`}>
-      {/* Sidebar visible uniquement si connecté */}
-      {isLoggedIn && (
+    <div className={`min-h-screen ${!hideSidebar ? "grid grid-cols-[240px_1fr]" : ""}`}>
+      {/* Sidebar visible uniquement si connecté ET pas sur une page publique */}
+      {!hideSidebar && (
         <aside className="bg-white border-r border-gray-300 p-5 text-gray-800">
           <h1 className="text-2xl font-bold mb-8 tracking-wide">HealthHome</h1>
           <nav className="space-y-2">
@@ -48,8 +56,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* Zone principale */}
       <main className="p-8 bg-gray-50 text-gray-900 w-full">
-        {/* Entête visible uniquement si connecté */}
-        {isLoggedIn && (
+        {/* En-tête visible uniquement si connecté ET pas sur page publique */}
+        {!hideSidebar && (
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-semibold">Overview</h2>
             <div className="text-sm text-gray-500">Prototype • v0</div>
