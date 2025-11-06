@@ -10,39 +10,23 @@ require('dotenv').config();              // Charge les variables depuis le fichi
 
 // 2️⃣ Création de l'application Express
 const app = express();
-<<<<<<< HEAD
 app.use(cors({
     origin: "http://localhost:3001", // ton frontend
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }));
 app.use(express.json());
-=======
->>>>>>> origin/feature_vidale
-
-// 3️⃣ Activation des middlewares
-app.use(cors());             // Permet à ton frontend (localhost:3001) d’appeler ton backend
-app.use(express.json());     // Permet à Express de lire les données JSON dans le corps des requêtes
 
 // ======================================================
 // 🔗 Connexion à la base de données MySQL (hébergée en ligne)
 // ======================================================
 
 const db = mysql.createConnection({
-<<<<<<< HEAD
-  
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT
-=======
-  host: process.env.DB_HOST,        // ex: sql.freesqldatabase.com
-  user: process.env.DB_USER,        // ton identifiant
-  password: process.env.DB_PASSWORD,// ton mot de passe
-  database: process.env.DB_NAME,    // nom de la base
-  port: process.env.DB_PORT         // souvent 3306
->>>>>>> origin/feature_vidale
 });
 
 db.connect((err) => {
@@ -78,7 +62,6 @@ app.get('/api/healthcheck', (req, res) => {
 const authRoutes = require("./routes/authRoutes")(db);
 app.use('/api', authRoutes);
 
-<<<<<<< HEAD
 // ✅ === Import de la route du profil utilisateur ===
 const userProfileRoutes = require('./routes/userroutes')(db);
 app.use('/api/user', userProfileRoutes);
@@ -90,6 +73,7 @@ const diagnosisRoutes = require("./routes/diagnosisRoutes")(db);
 app.use("/api/diagnosis", diagnosisRoutes);
 
 
+// Gestion des rendez-vous
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
@@ -98,13 +82,7 @@ app.use("/api/termin", terminRoutes);
 const nutritionRoutes = require("./routes/nutritionroutes")(db);
 app.use("/api/nutrition", nutritionRoutes);
 
-=======
-// Gestion des rendez-vous
-const terminRoutes = require("./routes/termineRoutes")(db);
-app.use("/api/termin", terminRoutes);
-
 // Gestion des vaccinations
->>>>>>> origin/feature_vidale
 const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
 app.use("/api/vaccinations", vaccinationRoutes);
 
@@ -112,7 +90,6 @@ app.use("/api/vaccinations", vaccinationRoutes);
 const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
 app.use("/api/medikamente", medikamenteRoutes);
 
-<<<<<<< HEAD
 const vitalsroutes = require("./routes/vitalsroutes")(db);
 app.use("/api/vitals", vitalsroutes);
  
@@ -120,7 +97,6 @@ app.use("/api/vitals", vitalsroutes);
 // 🚀 Démarrage du serveur
 app.listen(4000, () => {
   console.log('🚀 Backend démarré sur http://localhost:4000');
-=======
 // Exportation PDF / CSV
 const exportRoutes = require("./routes/exportRoutes");
 app.use("/api", exportRoutes);
@@ -136,7 +112,6 @@ const PORT = 4000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend démarré sur http://localhost:${PORT}`);
->>>>>>> origin/feature_vidale
 });
 
-
+})

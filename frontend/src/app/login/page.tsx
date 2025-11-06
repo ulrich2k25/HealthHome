@@ -1,8 +1,5 @@
 "use client";
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/feature_vidale
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -31,16 +28,8 @@ export default function LoginPage() {
 
       // 🔹 Si la connexion est réussie
       setMessage("✅ Connexion réussie !");
-<<<<<<< HEAD
       localStorage.setItem("email", email);
       localStorage.setItem("authToken", res.data.token);
-=======
-      // Enregistre le token et l'ID dans le localStorage
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("userId", res.data.id);
-
-      // 🔹 Redirige l'utilisateur vers le tableau de bord
->>>>>>> origin/feature_vidale
       router.push("/dashboard");
     } catch (err: any) {
       if (err.response?.status === 401) setMessage("❌ Mot de passe incorrect.");
@@ -99,7 +88,6 @@ export default function LoginPage() {
         </button>
       </form>
 
-<<<<<<< HEAD
       {message && (
         <p
           className="mt-4 text-sm"
@@ -116,12 +104,3 @@ export default function LoginPage() {
     </div>
   );
 }
-=======
-      {/* Message de succès ou d'erreur */}
-      {message && <p className="mt-4 text-sm text-gray-300">{message}</p>}
-    </div>
-  );
-}
-
-
->>>>>>> origin/feature_vidale

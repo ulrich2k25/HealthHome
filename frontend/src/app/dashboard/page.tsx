@@ -1,15 +1,7 @@
-<<<<<<< HEAD
 "use client";
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Vitalwerte from "../../components/Vitalwerte";
-=======
-"use client"; // Indique que cette page est interactive (React côté client)
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-
-// 📊 Importation de composants graphiques (Recharts)
->>>>>>> origin/feature_vidale
 import {
   ResponsiveContainer,
   LineChart,
@@ -31,13 +23,7 @@ import {
   Thermometer,
 } from "lucide-react";
 
-<<<<<<< HEAD
 // Données simulées
-=======
-// ==========================
-// 💓 Données fictives du graphique (BPM = battements par minute)
-// ==========================
->>>>>>> origin/feature_vidale
 const mock = [
   { time: "00:00", bpm: 62 },
   { time: "04:00", bpm: 58 },
@@ -48,7 +34,6 @@ const mock = [
   { time: "23:59", bpm: 64 },
 ];
 
-<<<<<<< HEAD
 const schlafData = [
   { day: "Mo", hours: 7.1 },
   { day: "Di", hours: 6.8 },
@@ -68,6 +53,7 @@ const schritteData = [
   { day: "Sa", steps: 13200 },
   { day: "So", steps: 9800 },
 ];
+
 
 const kalorienData = [
   { day: "Mo", kcal: 1900 },
@@ -89,6 +75,63 @@ interface Meal {
   date?: string;
 }
 
+// ==========================
+// 🧠 Composant principal : Dashboard
+// ==========================
+
+function HealthCard({ title, value, time, icon }: { title: string; value: string; time: string; icon: React.ReactNode; }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md flex flex-col justify-between h-40">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm font-medium text-gray-600">{title}</span>
+        <div className="bg-green-100 p-2 rounded-full">{icon}</div>
+      </div>
+
+      {/* === PETITS CARTONS DE STATISTIQUES === */}
+      <div className="grid md:grid-cols-4 gap-4 mb-3">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+          <div className="text-sm text-gray-400">BPM</div>
+          <div className="text-3xl font-bold">74</div>
+        </div>
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+          <div className="text-sm text-gray-400">Blutdruck</div>
+          <div className="text-3xl font-bold">122/79</div>
+        </div>
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+          <div className="text-sm text-gray-400">Schlaf</div>
+          <div className="text-3xl font-bold">7,2 h</div>
+        </div>
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+          <div className="text-sm text-gray-400">Kalorien</div>
+          <div className="text-3xl font-bold">1 950</div>
+        </div>
+      </div>
+
+      {/* === MINI-GRAPHIQUE BPM (utilise mock défini plus haut) === */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 h-24 mb-3">
+        <h3 className="text-sm text-gray-400 mb-2">Herzfrequenz (BPM)</h3>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={mock}>
+            <XAxis dataKey="time" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="bpm"
+              stroke="#22c55e"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="text-2xl font-bold text-gray-800">{value}</div>
+      <div className="text-xs text-gray-500 mt-1">{time}</div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<
     "herz" | "schlaf" | "schritte" | "kalorien"
@@ -106,12 +149,13 @@ export default function Dashboard() {
   const [vitals, setVitals] = useState<any[]>([]);
   const [showMealModal, setShowMealModal] = useState(false);
   const [showVitalModal, setShowVitalModal] = useState(false);
-  const [data, setData] = useState(mock);
 
+  const [data, setData] = useState(mock); // Données pour le graphique
+
+  // Vérifie si un token existe
   const router = useRouter();
   const API_URL = "http://localhost:4000";
 
-  // Vérification du token
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) router.push("/login");
@@ -119,41 +163,14 @@ export default function Dashboard() {
     setCheckingAuth(false);
   }, [router]);
 
-  // Charger les BPM
-=======
-// ==========================
-// 🧠 Composant principal : Dashboard
-// ==========================
-export default function Dashboard() {
-  const [data, setData] = useState(mock); // Données pour le graphique
-  const [isAuthorized, setIsAuthorized] = useState(false); // Vérifie si connecté
-  const [checkingAuth, setCheckingAuth] = useState(true); // Montre "chargement" pendant vérification
-  const router = useRouter();
-
-  // ==========================
-  // 🧩 Vérifie si un token existe dans le localStorage
-  // ==========================
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      // Si pas de token → retour à la page de login
-      router.push("/login");
-    } else {
-      // Sinon → autorise l’accès
-      setIsAuthorized(true);
-    }
-    setCheckingAuth(false); // On arrête l’état "chargement"
-  }, [router]);
-
-  // ==========================
-  // 📈 Charge les données du graphique
-  // ==========================
->>>>>>> origin/feature_vidale
+  // ✅ Toujours placer les hooks avant tout "return"
   useEffect(() => {
     setData(mock); // Ici tu pourrais plus tard charger des vraies données depuis le backend
   }, []);
 
-<<<<<<< HEAD
+  // ==========================
+  // ⏳ Affiche un écran de chargement pendant la vérification
+  // ==========================
   // Charger les vitalwerte depuis le backend
   useEffect(() => {
     const fetchVitals = async () => {
@@ -215,20 +232,6 @@ export default function Dashboard() {
 
   const goToProfile = () => router.push("/user-profile");
 
-=======
-  // ==========================
-  // 🚪 Déconnexion
-  // ==========================
-  const handleLogout = () => {
-    localStorage.removeItem("token"); // Supprime le token
-    localStorage.removeItem("userId"); // Supprime aussi l’ID utilisateur
-    router.push("/login"); // Retourne à la page de connexion
-  };
-
-  // ==========================
-  // ⏳ Affiche un écran de chargement pendant la vérification
-  // ==========================
->>>>>>> origin/feature_vidale
   if (checkingAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-800">
@@ -237,7 +240,6 @@ export default function Dashboard() {
     );
   }
 
-<<<<<<< HEAD
   if (!isAuthorized) return null;
 
   const renderChart = () => {
@@ -262,23 +264,11 @@ export default function Dashboard() {
   };
 
   return (
+    <div className="space-y-6">
+      {/* === BOUTON DE DÉCONNEXION === */}
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen text-gray-800">
       {/* Barre supérieure */}
       <div className="flex justify-end items-center gap-4 mb-4">
-=======
-  // Si non autorisé → on ne montre rien
-  if (!isAuthorized) {
-    return null;
-  }
-
-  // =======================================================
-  // ✅ Si connecté : affichage complet du tableau de bord
-  // =======================================================
-  return (
-    <div className="space-y-6">
-      {/* === BOUTON DE DÉCONNEXION === */}
-      <div className="flex justify-end">
->>>>>>> origin/feature_vidale
         <button
           onClick={goToProfile}
           className="flex items-center gap-2 px-3 py-2 bg-gray-200 rounded-full hover:bg-gray-300 text-gray-700"
@@ -287,7 +277,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-<<<<<<< HEAD
       {/* Titre */}
       <h2 className="text-xl font-semibold text-gray-700 mb-2">🩺 Gesundheitsübersicht</h2>
 
@@ -301,72 +290,11 @@ export default function Dashboard() {
         <HealthCard title="Temperatur" value="36.8 °C" time="Zuletzt: Heute 08:00" icon={<Thermometer className="text-green-500" />} />
       </div>
 
-      {/* Onglets graphiques */}
-      <div className="flex gap-2 mt-6">
-        {["herz", "schlaf", "schritte", "kalorien"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition ${
-              activeTab === tab ? "bg-green-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {tab === "herz"
-              ? "Herzfrequenz"
-              : tab === "schlaf"
-              ? "Schlaf"
-              : tab === "schritte"
-              ? "Schritte"
-              : "Kalorien"}
-          </button>
-        ))}
-      </div>
-
-      {/* Graphique dynamique */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 h-64 shadow-sm mt-4">
-        {renderChart()}
-        <button
-          onClick={() => setShowVitalModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mt-2"
-        >
-          + Vitalwerte
-        </button>
-        {showVitalModal && <Vitalwerte onClose={() => setShowVitalModal(false)} />}
-      </div>
-
-      {/* Suivi repas */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowMealModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <span className="text-lg font-bold">+</span> Mahlzeit
-        </button>
-      </div>
-
-      {showMealModal && (
-        <MealModal meal={meal} handleChange={handleChange} handleAddMeal={handleAddMeal} onClose={() => setShowMealModal(false)} />
-      )}
-
       <MealList meals={meals} totalCalories={totalCalories} />
     </div>
-  );
+  </div>
+);
 }
-
-// 🧩 Composant carte de santé
-function HealthCard({ title, value, time, icon }: { title: string; value: string; time: string; icon: React.ReactNode; }) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md flex flex-col justify-between h-40">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-600">{title}</span>
-        <div className="bg-green-100 p-2 rounded-full">{icon}</div>
-      </div>
-      <div className="text-2xl font-bold text-gray-800">{value}</div>
-      <div className="text-xs text-gray-500 mt-1">{time}</div>
-    </div>
-  );
-}
-
 // Wrappers graphiques
 function AreaChartWrapper({ data, dataKey, stroke, fill, fillOpacity }: any) {
   return (
@@ -478,50 +406,9 @@ function MealList({ meals, totalCalories }: any) {
         <div className="text-right text-xl font-bold mt-4 text-green-500 border-t border-gray-700 pt-2">
           Gesamt: {totalCalories} kcal
         </div>
-=======
-      {/* === PETITS CARTONS DE STATISTIQUES === */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">BPM</div>
-          <div className="text-3xl font-bold">74</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">Blutdruck</div>
-          <div className="text-3xl font-bold">122/79</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">Schlaf</div>
-          <div className="text-3xl font-bold">7,2 h</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-          <div className="text-sm text-gray-400">Kalorien</div>
-          <div className="text-3xl font-bold">1 950</div>
-        </div>
       </div>
 
-      {/* === GRAPHIQUE BPM === */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 h-64">
-        <h3 className="text-sm text-gray-400 mb-2">Herzfrequenz (BPM)</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="bpm"
-              stroke="#22c55e"
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
->>>>>>> origin/feature_vidale
-      </div>
-
-      {/* ====================================================== */}
-      {/* 📄 SECTION POUR TÉLÉCHARGER LES DONNÉES DU PATIENT */}
-      {/* ====================================================== */}
+      
       <DownloadSection />
     </div>
   );
