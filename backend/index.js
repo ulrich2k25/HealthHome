@@ -11,14 +11,17 @@ app.use(cors({
   }));
 app.use(express.json());
 
-// Connexion MySQL locale (WAMP)
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'healthhome'
-});
+// ======================================================
+// 🔗 Connexion à la base de données MySQL (hébergée en ligne)
+// ======================================================
 
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,        // ex: sql.freesqldatabase.com
+  user: process.env.DB_USER,        // ton identifiant
+  password: process.env.DB_PASSWORD,// ton mot de passe
+  database: process.env.DB_NAME,    // nom de la base
+  port: process.env.DB_PORT         // souvent 3306
+});
 db.connect((err) => {
   if (err) {
     console.error('❌ Erreur de connexion à MySQL :', err);
