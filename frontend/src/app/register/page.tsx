@@ -2,6 +2,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useAutoSave } from "../../lib/useAutoSave";
+
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,6 +13,13 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+
+useAutoSave("RegisterPage", { vorname, nachname, email, password }, (data) => {
+  setVorname(data.vorname);
+  setNachname(data.nachname);
+  setEmail(data.email);
+  setPassword(data.password);
+}, "http://localhost:4000/api/backup");
 
 const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();

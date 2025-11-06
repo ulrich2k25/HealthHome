@@ -11,7 +11,7 @@ module.exports = function (db) {
   if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
 
   // POST /api/backup  -> enregistre le backup (body JSON)
-  router.post("/", (req, res) => {
+  router.post("/backup", (req, res) => {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `backup_${timestamp}.json`;

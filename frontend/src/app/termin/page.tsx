@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
-
+import { useAutoSave } from "../../lib/useAutoSave";
 
 type Termin = {
   _id?: string;
@@ -24,6 +24,7 @@ export default function TerminPage() {
     doctor: "",
     location: "",
   });
+useAutoSave("termin", form, setForm, "http://localhost:4000/api/backup");
 
   const load = async () => {
     const res = await axios.get(`${API}/termin`);

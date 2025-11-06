@@ -8,7 +8,7 @@ import { useAutoSave } from "../lib/useAutoSave";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-useAutoSave("MainLayout", isLoggedIn, setIsLoggedIn);
+useAutoSave("MainLayout", isLoggedIn, setIsLoggedIn,"http://localhost:4000/api/backup");
 
   useEffect(() => {
     // Vérifie si un token est stocké (login effectué)
@@ -54,6 +54,19 @@ useAutoSave("MainLayout", isLoggedIn, setIsLoggedIn);
   href="/medikamente"
 >
   Medikamente
+</Link>
+
+<Link
+  className="block px-3 py-2 rounded-md hover:bg-[#1b2338] hover:text-white transition duration-200"
+  href="/malhzeit"
+>
+  Malhzeit
+</Link>
+<Link
+  className="block px-3 py-2 rounded-md hover:bg-[#1b2338] hover:text-white transition duration-200"
+  href="/vitalswerte"
+>
+ vitalswerte
 </Link>
 
 

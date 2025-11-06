@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useAutoSave } from "../lib/useAutoSave"; // Hook de sauvegarde automatique
+import { useAutoSave } from "../../lib/useAutoSave"; // Hook de sauvegarde automatique
 
 
 type VitalType = "herz" | "blutdruck" | "schlaf" | "schritte" | "blutzucker" | "temperatur";

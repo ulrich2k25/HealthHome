@@ -57,7 +57,7 @@ app.use("/api/nutrition", nutritionRoutes);
 const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
 app.use("/api/vaccinations", vaccinationRoutes);
 
-const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
+const medikamenteRoutes = require("./routes/medikamenteroutes")(db);
 app.use("/api/medikamente", medikamenteRoutes);
 
 const vitalsroutes = require("./routes/vitalsroutes")(db);

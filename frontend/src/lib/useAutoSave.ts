@@ -11,6 +11,7 @@ import { useEffect } from "react";
  * @param backupUrl (optionnel) URL pour sauvegarde distante (ex: "http://localhost:4000/api/backup/vitals")
  */
 export function useAutoSave<T>(key: string, values: T, setValues: (data: T) => void, backupUrl?: string) {
+
   // ✅ Restaure les données au chargement
   useEffect(() => {
     const saved = localStorage.getItem(key);

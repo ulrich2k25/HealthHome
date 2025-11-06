@@ -3,6 +3,7 @@ import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { useAutoSave } from "../../lib/useAutoSave";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
+  useAutoSave("LoginPage", { email, password }, (data) => {
+    setEmail(data.email);
+    setPassword(data.password);
+  }, "http://localhost:4000/api/backup");
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
