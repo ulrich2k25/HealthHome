@@ -168,19 +168,23 @@ router.post("/send-data", async (req, res) => {
     // --- Récupération des données associées ---
     const [vitals] = await db
       .promise()
-      .query("SELECT * FROM vitalwerte");
+      .query("SELECT * FROM vitalwerte where users_id = ?", [userId]);
 
     const [meds] = await db
       .promise()
-      .query("SELECT * FROM medikamente");
+      .query("SELECT * FROM medikamente where user_id = ?", [userId]);
 
     const [vaccines] = await db
       .promise()
-      .query("SELECT * FROM vaccinations");
+      .query("SELECT * FROM vaccinations where user_id = ?", [userId]);
 
     const [appointments] = await db
       .promise()
-      .query("SELECT * FROM termin");
+      .query("SELECT * FROM termin where user_id = ?", [userId]);
+
+      const [tests] = await db 
+      .promise()
+      .query("SELECT * FROM diagnoses where user_id = ?", [userId]);
 
     // --- Dossier temporaire ---
     const tempDir = path.join(__dirname, "../temp");
