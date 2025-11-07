@@ -1,11 +1,19 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useAutoSave } from "../../lib/useAutoSave"; // Hook de sauvegarde automatique
 
+import { useEffect, useState } from "react";
+import { useAutoSave } from "../../lib/useAutoSave";
 
-type VitalType = "herz" | "blutdruck" | "schlaf" | "schritte" | "blutzucker" | "temperatur";
+type VitalType =
+  | "herz"
+  | "blutdruck"
+  | "schlaf"
+  | "schritte"
+  | "blutzucker"
+  | "temperatur";
 
-export default function Vitalwerte({ onClose }: { onClose: () => void }) {
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+export default function VitalwertePage() {
   const [type, setType] = useState<VitalType | null>(null);
   const [values, setValues] = useState({
     herz: "",
@@ -18,9 +26,7 @@ export default function Vitalwerte({ onClose }: { onClose: () => void }) {
     datum: "",
   });
 
-  
-
-  // Auto-remplir la date/heure actuelle
+  // Auto-date
   useEffect(() => {
     if (!values.datum) {
       const now = new Date();
@@ -28,139 +34,136 @@ export default function Vitalwerte({ onClose }: { onClose: () => void }) {
       setValues((prev) => ({ ...prev, datum: isoDate }));
     }
   }, [values.datum]);
-    useAutoSave("vitalwerte", values, setValues,"http://localhost:4000/api/backup");
 
-  //  Gérer la saisie
+  useAutoSave("vitalwerte", values, setValues, "http://localhost:4000/api/backup");
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValues({ ...values, [e.target.name]: e.target.value });
   };
 
-  //  Sauvegarde (tu pourras ensuite connecter au backend)
   const handleSubmit = async () => {
-  try {
-    const res = await fetch("http://localhost:4000/api/vitals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ typ: type, ...values }),
-    });
+    if (!type) return alert("Bitte wählen Sie einen Typ aus.");
 
-    if (res.ok) {
-      alert("Daten erfolgreich gespeichert!");
-    
-      onClose();
-    } else {
-      alert("Fehler beim Speichern der Daten.");
+    try {
+      const res = await fetch(`${API}/vitals`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ typ: type, ...values }),
+      });
+
+      if (res.ok) {
+        alert("Daten erfolgreich gespeichert!");
+        setValues({
+          herz: "",
+          systolisch: "",
+          diastolisch: "",
+          schlaf: "",
+          schritte: "",
+          blutzucker: "",
+          temperatur: "",
+          datum: new Date().toISOString().slice(0, 16),
+        });
+      } else {
+        alert("Fehler beim Speichern der Daten.");
+      }
+    } catch (err) {
+      console.error("Fehler:", err);
+      alert("Serverfehler");
     }
-  } catch (err) {
-    console.error("Fehler:", err);
-    alert("Serverfehler");
-  }
-};
-
+  };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg transition-all">
+    <div className="min-h-screen bg-gray-50 text-gray-900 space-y-8 p-6">
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg">
         <h2 className="text-2xl font-semibold mb-6 text-gray-800 text-center">
           Vitalwerte erfassen
         </h2>
 
-        {/*  Sélecteur de type */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {(["herz", "blutdruck", "schlaf", "schritte", "blutzucker", "temperatur"] as VitalType[]).map(
-            (t) => (
-              <button
-                key={t}
-                onClick={() => setType(t)}
-                className={`p-3 rounded-xl font-medium border transition ${
-                  type === t
-                    ? "bg-blue-600 text-white border-blue-600 shadow-md"
-                    : "bg-gray-100 hover:bg-gray-200 border-gray-300"
-                }`}
-              >
-                {t}
-              </button>
-            )
-          )}
+        {/* Buttons für Typ */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+          {(
+            ["herz", "blutdruck", "schlaf", "schritte", "blutzucker", "temperatur"] as VitalType[]
+          ).map((t) => (
+            <button
+              key={t}
+              onClick={() => setType(t)}
+              className={`p-3 rounded-xl font-medium border transition ${
+                type === t
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                  : "bg-gray-100 hover:bg-gray-200 border-gray-300"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
 
-        {/*  Formulaire dynamique */}
+        {/* Dynamische Eingabe je nach Typ */}
         {type && (
           <div className="space-y-3">
             {type === "herz" && (
-              <input
+              <InputField
+                label="Herzfrequenz (BPM)"
                 name="herz"
-                type="number"
-                placeholder="Herzfrequenz (BPM)"
                 value={values.herz}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
               />
             )}
             {type === "blutdruck" && (
               <div className="grid grid-cols-2 gap-3">
-                <input
+                <InputField
+                  label="Systolisch"
                   name="systolisch"
-                  type="number"
-                  placeholder="Systolisch"
                   value={values.systolisch}
                   onChange={handleChange}
-                  className="p-3 border rounded-lg"
                 />
-                <input
+                <InputField
+                  label="Diastolisch"
                   name="diastolisch"
-                  type="number"
-                  placeholder="Diastolisch"
                   value={values.diastolisch}
                   onChange={handleChange}
-                  className="p-3 border rounded-lg"
                 />
               </div>
             )}
             {type === "schlaf" && (
-              <input
+              <InputField
+                label="Schlafdauer (Std)"
                 name="schlaf"
-                type="number"
-                placeholder="Schlafdauer (Std)"
                 value={values.schlaf}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
               />
             )}
             {type === "schritte" && (
-              <input
+              <InputField
+                label="Anzahl Schritte"
                 name="schritte"
-                type="number"
-                placeholder="Anzahl Schritte"
                 value={values.schritte}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
               />
             )}
             {type === "blutzucker" && (
-              <input
+              <InputField
+                label="Blutzucker (mg/dL)"
                 name="blutzucker"
-                type="number"
-                placeholder="Blutzucker (mg/dL)"
                 value={values.blutzucker}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
               />
             )}
             {type === "temperatur" && (
-              <input
+              <InputField
+                label="Körpertemperatur (°C)"
                 name="temperatur"
-                type="number"
-                placeholder="Körpertemperatur (°C)"
                 value={values.temperatur}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
               />
             )}
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Datum & Uhrzeit</label>
+            <div className="flex flex-col">
+              <label htmlFor="datum" className="text-gray-600 text-sm mb-1">
+                Datum & Uhrzeit
+              </label>
               <input
+                id="datum"
                 type="datetime-local"
                 name="datum"
                 value={values.datum}
@@ -177,17 +180,35 @@ export default function Vitalwerte({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         )}
-
-
-
-        {/*  Bouton Annuler */}
-        <button
-          onClick={onClose}
-          className="mt-5 text-gray-500 hover:text-gray-700 underline text-sm block mx-auto"
-        >
-          Abbrechen
-        </button>
       </div>
+    </div>
+  );
+}
+
+function InputField({
+  label,
+  name,
+  value,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="flex flex-col">
+      <label htmlFor={name} className="text-gray-600 text-sm mb-1">
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="number"
+        value={value}
+        onChange={onChange}
+        className="w-full p-3 border rounded-lg"
+      />
     </div>
   );
 }

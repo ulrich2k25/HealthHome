@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { useAutoSave } from "../../lib/useAutoSave";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,19 +10,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  useAutoSave("LoginPage", { email, password }, (data) => {
-    setEmail(data.email);
-    setPassword(data.password);
-  }, "http://localhost:4000/api/backup");
-  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:4000/api/login", {
-        email,
-        password,
-      });
+      const res = await axios.post(
+  "http://localhost:4000/api/login",
+  { email, password },
+  { withCredentials: true } // ✅ essentiel pour la persistance du login
+);
+
 
       setMessage("✅ Connexion réussie !");
       localStorage.setItem("email", email);
