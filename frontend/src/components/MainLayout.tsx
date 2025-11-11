@@ -50,6 +50,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             >
               Medikamente
             </Link>
+
+            <Link
+              className="block px-3 py-2 rounded-md hover:bg-gray-200 hover:text-gray-900 transition duration-200"
+              href="/mahlzeit"
+            >
+              Mahlzeit
+            </Link>
+           
           </nav>
         </aside>
       )}
