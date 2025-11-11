@@ -144,210 +144,140 @@ export default function DashboardMeals() {
 
   // 🧾 Interface
   return (
-    <div className="space-y-6">
-      {/* FORMULAIRE */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-3"
-      >
-        <div className="grid md:grid-cols-2 gap-3">
-          <input
-            name="name"
-            value={meal.name}
-            onChange={(e) => setMeal({ ...meal, name: e.target.value })}
-            placeholder="Mahlzeit"
-            className="p-2 rounded-lg bg-gray-800 text-white"
-          />
-          <input
-            name="amount"
-            value={meal.amount}
-            onChange={(e) => setMeal({ ...meal, amount: e.target.value })}
-            placeholder="Menge (g/ml)"
-            className="p-2 rounded-lg bg-gray-800 text-white"
-          />
-          <input
-            name="calories"
-            type="number"
-            value={meal.calories}
-            onChange={(e) => setMeal({ ...meal, calories: e.target.value })}
-            placeholder="Kalorien"
-            className="p-2 rounded-lg bg-gray-800 text-white"
-          />
-          <input
-            name="date"
-            type="date"
-            value={meal.date || ""}
-            onChange={(e) => setMeal({ ...meal, date: e.target.value })}
-            className="p-2 rounded-lg bg-gray-800 text-white"
-          />
-          <input
-            name="time"
-            type="time"
-            value={meal.time}
-            onChange={(e) => setMeal({ ...meal, time: e.target.value })}
-            className="p-2 rounded-lg bg-gray-800 text-white"
-          />
-          <select
-            name="type"
-            value={meal.type}
-            onChange={(e) =>
-              setMeal({ ...meal, type: e.target.value as MealType })
-            }
-            className="p-2 rounded-lg bg-gray-800 text-white"
-          >
-            <option>Frühstück</option>
-            <option>Mittagessen</option>
-            <option>Abendessen</option>
-            <option>Snack</option>
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white w-full"
-        >
-          Hinzufügen
-        </button>
-      </form>
-
-      {/* 🔽 Filtres période */}
-      <div className="flex gap-2">
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value as any)}
-          className="p-2 bg-gray-800 text-white rounded"
-        >
-          <option value="day">Tagesansicht</option>
-          <option value="week">Wochenansicht</option>
-          <option value="month">Monatsansicht</option>
-        </select>
+  <div className="space-y-6 text-gray-800">
+    {/* FORMULAIRE */}
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm space-y-4"
+    >
+      <h2 className="text-xl font-semibold text-gray-700">Neue Mahlzeit hinzufügen</h2>
+      <div className="grid md:grid-cols-2 gap-4">
         <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="p-2 bg-gray-800 text-white rounded"
+          name="name"
+          value={meal.name}
+          onChange={(e) => setMeal({ ...meal, name: e.target.value })}
+          placeholder="Mahlzeit"
+          className="p-2 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400"
         />
+        <input
+          name="amount"
+          value={meal.amount}
+          onChange={(e) => setMeal({ ...meal, amount: e.target.value })}
+          placeholder="Menge (g/ml)"
+          className="p-2 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          name="calories"
+          type="number"
+          value={meal.calories}
+          onChange={(e) => setMeal({ ...meal, calories: e.target.value })}
+          placeholder="Kalorien"
+          className="p-2 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          name="date"
+          type="date"
+          value={meal.date || ""}
+          onChange={(e) => setMeal({ ...meal, date: e.target.value })}
+          className="p-2 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400"
+        />
+        <input
+          name="time"
+          type="time"
+          value={meal.time}
+          onChange={(e) => setMeal({ ...meal, time: e.target.value })}
+          className="p-2 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400"
+        />
+        <select
+          name="type"
+          value={meal.type}
+          onChange={(e) => setMeal({ ...meal, type: e.target.value as MealType })}
+          className="p-2 rounded-lg bg-gray-50 border border-gray-300 focus:ring-2 focus:ring-blue-400"
+        >
+          <option>Frühstück</option>
+          <option>Mittagessen</option>
+          <option>Abendessen</option>
+          <option>Snack</option>
+        </select>
       </div>
+      <button
+        type="submit"
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium w-full transition-all"
+      >
+        Hinzufügen
+      </button>
+    </form>
 
-      {/* TOTAL */}
-      <div className="bg-gray-800 p-4 rounded-xl flex justify-between items-center">
-        <div>
-          <h3 className="text-gray-400 text-sm">Kalorienüberwachung</h3>
-          <p className="text-xl font-bold text-white">
-            {period === "day"
-              ? "Tägliche Kalorienbilanz"
-              : period === "week"
-              ? "Wöchentliche Kalorienbilanz"
-              : "Monatliche Kalorienbilanz"}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-gray-400 text-sm">Gegessen</p>
-          <p className="text-3xl font-bold text-green-500">{totalCalories}</p>
-          <span className="text-gray-400 text-sm">kcal</span>
-        </div>
+    {/* TOTAL */}
+    <div className="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm flex justify-between items-center">
+      <div>
+        <h3 className="text-gray-500 text-sm">Kalorienüberwachung</h3>
+        <p className="text-xl font-semibold text-gray-800">
+          {period === "day"
+            ? "Tägliche Kalorienbilanz"
+            : period === "week"
+            ? "Wöchentliche Kalorienbilanz"
+            : "Monatliche Kalorienbilanz"}
+        </p>
       </div>
-
-      {/* TABLEAU */}
-      <div className="bg-gray-900 border border-gray-800 p-4 rounded-2xl">
-        <h3 className="text-white font-semibold mb-3">Gespeicherte Mahlzeiten</h3>
-
-        {meals.length === 0 ? (
-          <p className="text-gray-500">Keine Einträge</p>
-        ) : (
-          <table className="w-full text-sm text-left text-gray-300">
-            <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
-              <tr>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Menge</th>
-                <th className="px-3 py-2">Kalorien</th>
-                <th className="px-3 py-2">Datum</th>
-                <th className="px-3 py-2">Zeit</th>
-                <th className="px-3 py-2">Typ</th>
-                <th className="px-3 py-2 text-center">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meals.map((m) => (
-                <tr key={m.id} className="border-t border-gray-700 hover:bg-gray-800/40">
-                  {editingMeal?.id === m.id ? (
-                    <>
-                      <td className="px-3 py-2">
-                        <input
-                          value={editingMeal.name}
-                          onChange={(e) =>
-                            setEditingMeal({ ...editingMeal, name: e.target.value })
-                          }
-                          className="bg-gray-700 text-white rounded px-2 py-1 w-full"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          value={editingMeal.amount}
-                          onChange={(e) =>
-                            setEditingMeal({ ...editingMeal, amount: e.target.value })
-                          }
-                          className="bg-gray-700 text-white rounded px-2 py-1 w-full"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          value={editingMeal.calories}
-                          onChange={(e) =>
-                            setEditingMeal({
-                              ...editingMeal,
-                              calories: Number(e.target.value),
-                            })
-                          }
-                          className="bg-gray-700 text-white rounded px-2 py-1 w-full"
-                        />
-                      </td>
-                      <td colSpan={3}></td>
-                      <td className="text-center">
-                        <button
-                          onClick={handleSaveEdit}
-                          className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-white mr-2"
-                        >
-                          💾
-                        </button>
-                        <button
-                          onClick={() => setEditingMeal(null)}
-                          className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-white"
-                        >
-                          ❌
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-3 py-2">{m.Name || m.name}</td>
-                      <td className="px-3 py-2">{m.amount}</td>
-                      <td className="px-3 py-2">{m.calories}</td>
-                      <td className="px-3 py-2">{m.date?.split("T")[0]}</td>
-                      <td className="px-3 py-2">{m.time}</td>
-                      <td className="px-3 py-2">{m.type}</td>
-                      <td className="text-center px-3 py-2">
-                        <button
-                          onClick={() => setEditingMeal(m)}
-                          className="text-yellow-400 hover:text-yellow-500 mr-3"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleDelete(m.id)}
-                          className="text-red-400 hover:text-red-500"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="text-right">
+        <p className="text-gray-500 text-sm">Gegessen</p>
+        <p className="text-3xl font-bold text-green-600">{totalCalories}</p>
+        <span className="text-gray-500 text-sm">kcal</span>
       </div>
     </div>
-  );
+
+    {/* TABLEAU */}
+    <div className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm">
+      <h3 className="text-lg font-semibold text-gray-700 mb-3">Gespeicherte Mahlzeiten</h3>
+
+      {meals.length === 0 ? (
+        <p className="text-gray-500">Keine Einträge</p>
+      ) : (
+        <table className="w-full text-sm text-left text-gray-700">
+          <thead className="bg-gray-100 text-gray-600 uppercase text-xs">
+            <tr>
+              <th className="px-3 py-2">Name</th>
+              <th className="px-3 py-2">Menge</th>
+              <th className="px-3 py-2">Kalorien</th>
+              <th className="px-3 py-2">Datum</th>
+              <th className="px-3 py-2">Zeit</th>
+              <th className="px-3 py-2">Typ</th>
+              <th className="px-3 py-2 text-center">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {meals.map((m) => (
+              <tr
+                key={m.id}
+                className="border-t border-gray-200 hover:bg-gray-50 transition-all"
+              >
+                <td className="px-3 py-2">{m.name}</td>
+                <td className="px-3 py-2">{m.amount}</td>
+                <td className="px-3 py-2 font-medium text-blue-600">{m.calories}</td>
+                <td className="px-3 py-2">{m.date?.split("T")[0]}</td>
+                <td className="px-3 py-2">{m.time}</td>
+                <td className="px-3 py-2">{m.type}</td>
+                <td className="text-center px-3 py-2 space-x-2">
+                  <button
+                    onClick={() => setEditingMeal(m)}
+                    className="text-yellow-500 hover:text-yellow-600 transition"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDelete(m.id)}
+                    className="text-red-500 hover:text-red-600 transition"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </div>
+);
 }

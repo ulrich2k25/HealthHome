@@ -1,146 +1,252 @@
-// ========================
-// IMPORTATION DES MODULES
-// ========================
+// ======================================================
+// 📦 exportRoutes.js — Exportation PDF & CSV des données utilisateur
+// ======================================================
 
-// Express = framework pour créer des routes HTTP (comme /api/export)
-const express = require('express');
+require("dotenv").config(); // Charge les variables d’environnement depuis .env
+const express = require("express");
+const mysql = require("mysql2");
+const { Parser } = require("json2csv"); // Conversion JSON → CSV
+const PDFDocument = require("pdfkit"); // Génération de fichiers PDF
 
-// MySQL2 = permet de se connecter à ta base de données MySQL
-const mysql = require('mysql2');
-
-// json2csv = transforme les données JSON en fichier CSV
-const { Parser } = require('json2csv');
-
-// pdfkit = permet de créer un fichier PDF depuis du texte
-const PDFDocument = require('pdfkit');
-
-// On crée un "router" Express : il contiendra toutes les routes d'export
+// Création du routeur Express (mini API)
 const router = express.Router();
 
-
-// ========================
-// CONNEXION À TA BASE DE DONNÉES MYSQL
-// ========================
-
+// ======================================================
+// 🔗 Connexion à la base MySQL
+// ======================================================
 const db = mysql.createConnection({
- host: process.env.DB_HOST,
+  host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
 });
 
+// ======================================================
+// 🧾 Fonction utilitaire pour générer le PDF complet
+// ======================================================
+function generateFullPDF(res, user, vitals, meds, vaccines, appointments, nutrition, diagnoses) {
+  // Création du document PDF
+  const doc = new PDFDocument({ margin: 50 });
 
-// ========================
-// ROUTE : EXPORT CSV
-// ========================
+  // Préparation de la réponse HTTP : type de fichier et nom
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename=Gesundheitsdaten_${user.vorname}.pdf`);
 
-/*
-  ➤ Cette route permet d'exporter les données d'un SEUL utilisateur
-  sous format CSV.
-  Exemple : http://localhost:4000/api/export/csv?id=8
-*/
-router.get('/export/csv', (req, res) => {
-  // On récupère l'ID du patient depuis l'URL : ?id=8
+  // On relie le flux de sortie du PDF à la réponse HTTP
+  doc.pipe(res);
+
+  // --- TITRE ---
+  doc.fontSize(20).text("Gesundheitsdaten – HealthHome", { align: "center" });
+  doc.moveDown(2);
+
+  // --- Informations du patient ---
+  doc.fontSize(14).text("Patientendaten", { underline: true });
+  doc.moveDown(0.5);
+  doc
+    .fontSize(12)
+    .text(`Vorname: ${user.vorname}`)
+    .text(`Nachname: ${user.nachname}`)
+    .text(`E-Mail: ${user.email}`)
+    .text(`Alter: ${user.alter_jahre || ""}`)
+    .text(`Geschlecht: ${user.geschlecht || ""}`)
+    .text(`Gewicht: ${user.gewicht || ""}`)
+    .text(`Größe: ${user.groesse || ""}`)
+    .text(`Allergien: ${user.allergien || ""}`)
+    .text(`Kommentare für Ärzte: ${user.kommentar_aerzte || ""}`)
+    
+    .moveDown(1.5);
+
+  // --- Vitalwerte ---
+  doc.fontSize(14).text("Vitalwerte", { underline: true });
+  doc.moveDown(0.5);
+  if (vitals.length > 0) {
+    vitals.forEach((v) => {
+      doc
+        .fontSize(12)
+        .text(`Datum: ${v.datum || ""}`)
+        .text(`Blutdruck: ${v.blutdruck || ""}`)
+        .text(`BPM: ${v.bpm || ""}`)
+        .text(`Blutzucker: ${v.blutzucker || ""}`)
+        .moveDown();
+    });
+  } else {
+    doc.fontSize(12).text("Keine Vitaldaten gefunden.").moveDown();
+  }
+
+  // --- Medikamente ---
+  doc.fontSize(14).text("Medikamente", { underline: true });
+  doc.moveDown(0.5);
+  if (meds.length > 0) {
+    meds.forEach((m) => {
+      doc
+        .fontSize(12)
+        .text(`Name: ${m.name || m.medikament || ""}`)
+        .text(`Dosierung: ${m.dosierung || ""}`)
+        .text(`Häufigkeit: ${m.haeufigkeit || ""}`)
+        .text(`Beginn: ${m.start_datum || ""}`)
+        .text(`Ende: ${m.ende_datum || ""}`)
+        .moveDown();
+    });
+  } else {
+    doc.fontSize(12).text("Keine Medikamente gefunden.").moveDown();
+  }
+
+  // --- Impfungen ---
+  doc.fontSize(14).text("Impfungen", { underline: true });
+  doc.moveDown(0.5);
+  if (vaccines.length > 0) {
+    vaccines.forEach((v) => {
+      doc
+        .fontSize(12)
+        .text(`Impfstoff: ${v.name || v.impfung || ""}`)
+        .text(`Datum: ${v.datum || ""}`)
+        .text(`Arzt: ${v.arzt || ""}`)
+        .moveDown();
+    });
+  } else {
+    doc.fontSize(12).text("Keine Impfungen gefunden.").moveDown();
+  }
+
+  // --- Termine ---
+  doc.fontSize(14).text("Termine", { underline: true });
+  doc.moveDown(0.5);
+  if (appointments.length > 0) {
+    appointments.forEach((t) => {
+      doc
+        .fontSize(12)
+        .text(`Datum: ${t.datum || ""}`)
+        .text(`Uhrzeit: ${t.uhrzeit || ""}`)
+        .text(`Titel/Beschreibung: ${t.titel || t.beschreibung || ""}`)
+        .moveDown();
+    });
+  } else {
+    doc.fontSize(12).text("Keine Termine gefunden.").moveDown();
+  }
+
+  // --- Mahlzeiten ---
+  doc.fontSize(14).text("Ernährung", { underline: true });
+  doc.moveDown(0.5);
+  if (nutrition.length > 0) {
+    nutrition.forEach((n) => {
+      doc
+        .fontSize(12)
+        .text(`Name: ${n.name || ""}`)
+        .text(`Menge: ${n.amount || ""}`)
+        .text(`Kalorien: ${n.calories || ""}`)
+        .text(`Zeit: ${n.time || ""}`)
+        .text(`Typ: ${n.type || ""}`)
+        .moveDown();
+    });
+  } else {
+    doc.fontSize(12).text("Keine Mahlzeitdaten gefunden.").moveDown();
+  }
+
+  // --- Diagnosen ---
+  doc.fontSize(14).text("Diagnosen", { underline: true });
+  doc.moveDown(0.5);
+  if (diagnoses.length > 0) {
+    diagnoses.forEach((d) => {
+      doc
+        .fontSize(12)
+        .text(`Datum: ${d.datum || ""}`)
+        .text(`Diagnose: ${d.diagnose || ""}`)
+        .text(`Beschreibung: ${d.beschreibung || ""}`)
+        .moveDown();
+    });
+  } else {
+    doc.fontSize(12).text("Keine Diagnosen gefunden.").moveDown();
+  }
+
+  // --- Pied de page ---
+  doc.moveDown(2);
+  doc.fontSize(12).text("Danke, dass Sie HealthHome verwenden!", { align: "center" });
+
+  // On clôture et envoie le PDF
+  doc.end();
+}
+
+// ======================================================
+// 📤 ROUTE : Export CSV
+// ======================================================
+router.get("/export/csv", async (req, res) => {
   const userId = req.query.id;
+  if (!userId) return res.status(400).send("ID utilisateur manquant.");
 
-  // Si l'ID est manquant, on renvoie une erreur
-  if (!userId) return res.status(400).send('ID utilisateur manquant.');
+  try {
+    // --- Lecture des données utilisateur ---
+    const [userRows] = await db
+      .promise()
+      .query("SELECT id, vorname, nachname, email, alter_jahre, geschlecht, gewicht, groesse, allergien, kommentar_aerzte  FROM users WHERE id = ?", [userId]);
+    if (userRows.length === 0) return res.status(404).send("Utilisateur non trouvé.");
 
-  // Requête SQL : on récupère SEULEMENT les infos du bon utilisateur
-  const query = 'SELECT vorname, nachname, email, created_at, verified FROM users WHERE id = ?';
+    const user = userRows[0];
 
-  // On exécute la requête MySQL
-  db.query(query, [userId], (err, results) => {
-    // En cas d’erreur de base de données
-    if (err) {
-      console.error('Erreur MySQL :', err);
-      return res.status(500).send('Erreur de base de données.');
-    }
+    // --- Lecture des autres tables ---
+    const [vitals] = await db.promise().query("SELECT * FROM vitalwerte WHERE users_id = ?", [userId]);
+    const [meds] = await db.promise().query("SELECT * FROM medikamente WHERE user_id = ?", [userId]);
+    const [vaccines] = await db.promise().query("SELECT * FROM vaccinations WHERE user_id = ?", [userId]);
+    const [appointments] = await db.promise().query("SELECT * FROM termin WHERE user_id = ?", [userId]);
+    const [nutrition] = await db.promise().query("SELECT * FROM nutrition WHERE user_id = ?", [userId]);
+    const [diagnoses] = await db.promise().query("SELECT * FROM diagnoses WHERE user_id = ?", [userId]);
 
-    // Si aucun utilisateur trouvé (ex : ID inexistant)
-    if (results.length === 0) {
-      return res.status(404).send('Utilisateur non trouvé.');
-    }
+    // --- Organisation du CSV ---
+    const data = {
+      Benutzer: user,
+      Vitalwerte: vitals,
+      Medikamente: meds,
+      Impfungen: vaccines,
+      Termine: appointments,
+      Ernährung: nutrition,
+      Diagnosen: diagnoses,
+    };
 
-    // On convertit les données SQL en CSV avec json2csv
     const parser = new Parser();
-    const csv = parser.parse(results);
+    const csv = parser.parse(data);
 
-    // On indique au navigateur que la réponse est un fichier CSV
-    res.header('Content-Type', 'text/csv');
-    res.attachment(`mes_donnees_utilisateur_${userId}.csv`);
-
-    // On envoie le fichier au navigateur pour téléchargement
+    res.header("Content-Type", "text/csv");
+    res.attachment(`Gesundheitsdaten_${user.vorname}.csv`);
     res.send(csv);
-  });
+  } catch (err) {
+    console.error("Erreur export CSV:", err);
+    res.status(500).send("Fehler beim Erstellen der CSV-Datei.");
+  }
 });
 
-
-// ========================
-// ROUTE : EXPORT PDF
-// ========================
-
-/*
-  ➤ Même principe, mais cette fois on génère un PDF au lieu d’un CSV.
-  Exemple : http://localhost:4000/api/export/pdf?id=8
-*/
-router.get('/export/pdf', (req, res) => {
-  // Récupération de l'ID du patient depuis l’URL
+// ======================================================
+// 📄 ROUTE : Export PDF
+// ======================================================
+router.get("/export/pdf", async (req, res) => {
   const userId = req.query.id;
+  if (!userId) return res.status(400).send("ID utilisateur manquant.");
 
-  // Si aucun ID n’est fourni → message d’erreur
-  if (!userId) return res.status(400).send('ID utilisateur manquant.');
+  try {
+    // --- Lecture des données utilisateur ---
+    const [userRows] = await db
+      .promise()
+      .query("SELECT id, vorname, nachname, email, alter_jahre, geschlecht, gewicht, groesse, allergien, kommentar_aerzte  FROM users WHERE id = ?", [userId]);
+    if (userRows.length === 0) return res.status(404).send("Utilisateur non trouvé.");
 
-  // Requête SQL : on sélectionne les colonnes utiles du bon utilisateur
-  const query = 'SELECT vorname, nachname, email, created_at, verified FROM users WHERE id = ?';
+    const user = userRows[0];
 
-  // On exécute la requête MySQL
-  db.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('Erreur MySQL :', err);
-      return res.status(500).send('Erreur de base de données.');
-    }
+    // --- Lecture des autres tables ---
+    const [vitals] = await db.promise().query("SELECT * FROM vitalwerte WHERE users_id = ?", [userId]);
+    const [meds] = await db.promise().query("SELECT * FROM medikamente WHERE user_id = ?", [userId]);
+    const [vaccines] = await db.promise().query("SELECT * FROM vaccinations WHERE user_id = ?", [userId]);
+    const [appointments] = await db.promise().query("SELECT * FROM termin WHERE user_id = ?", [userId]);
+    const [nutrition] = await db.promise().query("SELECT * FROM nutrition WHERE user_id = ?", [userId]);
+    const [diagnoses] = await db.promise().query("SELECT * FROM diagnoses WHERE user_id = ?", [userId]);
 
-    // Si aucun utilisateur trouvé
-    if (results.length === 0) {
-      return res.status(404).send('Utilisateur non trouvé.');
-    }
-
-    // On récupère le premier (et seul) utilisateur trouvé
-    const user = results[0];
-
-    // Création du document PDF
-    const doc = new PDFDocument();
-
-    // On prépare la réponse HTTP
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=mes_donnees_${user.vorname}.pdf`);
-
-    // On envoie le PDF directement au navigateur
-    doc.pipe(res);
-
-    // === CONTENU DU PDF ===
-    doc.fontSize(18).text('Mes données personnelles HealthHome', { align: 'center' });
-    doc.moveDown(2);
-
-    doc.fontSize(12).text(`Prénom : ${user.vorname}`);
-    doc.text(`Nom : ${user.nachname}`);
-    doc.text(`Email : ${user.email}`);
-    doc.text(`Compte créé le : ${user.created_at}`);
-    doc.text(`Compte vérifié : ${user.verified ? 'Oui' : 'Non'}`);
-    doc.moveDown(2);
-    doc.text('Merci d’utiliser HealthHome 💚', { align: 'center' });
-
-    // On termine et envoie le PDF
-    doc.end();
-  });
+    // --- Génération du PDF complet ---
+    generateFullPDF(res, user, vitals, meds, vaccines, appointments, nutrition, diagnoses);
+  } catch (err) {
+    console.error("Erreur export PDF:", err);
+    res.status(500).send("Fehler beim Erstellen der PDF-Datei.");
+  }
 });
 
-
-// ========================
-// EXPORT DU ROUTER
-// ========================
-
-// Cette ligne rend les routes accessibles depuis index.js
+// ======================================================
+// 🧩 EXPORT DU ROUTER
+// ======================================================
 module.exports = router;
+ 
