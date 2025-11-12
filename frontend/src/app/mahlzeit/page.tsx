@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { useAutoSave } from "../../lib/useAutoSave";
 
-// TYPES
 export type MealType = "Frühstück" | "Mittagessen" | "Abendessen" | "Snack";
 
 type Meal = {
@@ -24,6 +23,8 @@ type MealFormValues = {
   date?: string;
 };
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 export default function DashboardMeals() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [meal, setMeal] = useState<MealFormValues>({
@@ -40,33 +41,53 @@ export default function DashboardMeals() {
   );
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
 
-  // 🔁 Autosave du formulaire localement
   useAutoSave("MealForm", meal, setMeal, "http://localhost:4000/api/backup");
 
-  // 🧩 Charger repas depuis le backend
+  function getWeekRangeISO(d: Date) {
+    const day = (d.getDay() + 6) % 7;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - day);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const start = monday.toISOString().slice(0, 10);
+    const end = sunday.toISOString().slice(0, 10);
+    return { start, end };
+  }
+
+  function getMonthRange(d: Date) {
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const startDate = new Date(y, m, 1);
+    const endDate = new Date(y, m + 1, 0);
+    const start = startDate.toISOString().slice(0, 10);
+    const end = endDate.toISOString().slice(0, 10);
+    return { start, end };
+  }
+
   useEffect(() => {
     const loadMeals = async () => {
-      let url = "";
       const date = new Date(selectedDate);
+      let url = "";
 
       if (period === "day") {
-        url = `http://localhost:4000/api/nutrition/by-date/${selectedDate}`;
+        url = `${API_BASE}/api/nutrition/by-date/${selectedDate}`;
       } else if (period === "week") {
-        const year = date.getFullYear();
-        const firstJan = new Date(date.getFullYear(), 0, 1);
-        const days = Math.floor((+date - +firstJan) / 86400000);
-        const week = Math.ceil((days + firstJan.getDay() + 1) / 7);
-        url = `http://localhost:4000/api/nutrition/by-week/${year}/${week}`;
+        const { start, end } = getWeekRangeISO(date);
+        url = `${API_BASE}/api/nutrition/by-range?start=${start}&end=${end}`;
       } else {
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        url = `http://localhost:4000/api/nutrition/by-month/${year}/${month}`;
+        const { start, end } = getMonthRange(date);
+        url = `${API_BASE}/api/nutrition/by-range?start=${start}&end=${end}`;
       }
 
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: "include" });
       const data = await res.json();
-      setMeals(data);
+      setMeals(Array.isArray(data) ? data : []);
     };
+
     loadMeals();
   }, [period, selectedDate]);
 
@@ -74,8 +95,7 @@ export default function DashboardMeals() {
     (sum, m) => sum + Number(m.calories || 0),
     0
   );
-
-  // 🧩 Ajouter un repas
+// 🧩 Ajouter un repas
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!meal.name || meal.calories === "") return;
@@ -97,7 +117,25 @@ export default function DashboardMeals() {
 
     const data = await res.json();
     if (data.id) {
-      setMeals((prev) => [data, ...prev]);
+    // ✅ RECHARGE LA LISTE COMPLÈTE DEPUIS LA BASE
+    const date = new Date(selectedDate);
+    let url = "";
+
+    if (period === "day") {
+      url = `${API_BASE}/api/nutrition/by-date/${selectedDate}`;
+    } else if (period === "week") {
+      const { start, end } = getWeekRangeISO(date);
+      url = `${API_BASE}/api/nutrition/by-range?start=${start}&end=${end}`;
+    } else {
+      const { start, end } = getMonthRange(date);
+      url = `${API_BASE}/api/nutrition/by-range?start=${start}&end=${end}`;
+    }
+
+    const reloadRes = await fetch(url);
+    const meals = await reloadRes.json();
+    setMeals(Array.isArray(meals) ? meals : []);
+
+    // Réinitialise le formulaire
       setMeal({
         name: "",
         amount: "",
@@ -109,14 +147,12 @@ export default function DashboardMeals() {
     }
   };
 
-  // 🗑️ Supprimer un repas
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer ce repas ?")) return;
     await fetch(`http://localhost:4000/api/nutrition/${id}`, { method: "DELETE" });
     setMeals((prev) => prev.filter((m) => m.id !== id));
   };
 
-  // 💾 Sauvegarder modification
   const handleSaveEdit = async () => {
     if (!editingMeal) return;
     const res = await fetch(`http://localhost:4000/api/nutrition/${editingMeal.id}`, {
@@ -133,13 +169,12 @@ export default function DashboardMeals() {
     }
   };
 
-  // 🧾 Rendu UI
   return (
     <div className="space-y-6">
       {/* FORMULAIRE */}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-3"
+        className="bg-white border border-gray-200 shadow-sm p-4 rounded-2xl space-y-3"
       >
         <div className="grid md:grid-cols-2 gap-3">
           <input
@@ -147,14 +182,14 @@ export default function DashboardMeals() {
             value={meal.name}
             onChange={(e) => setMeal({ ...meal, name: e.target.value })}
             placeholder="Mahlzeit"
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg border border-gray-300 bg-white text-gray-800"
           />
           <input
             name="amount"
             value={meal.amount}
             onChange={(e) => setMeal({ ...meal, amount: e.target.value })}
             placeholder="Menge (g/ml)"
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg border border-gray-300 bg-white text-gray-800"
           />
           <input
             name="calories"
@@ -162,21 +197,21 @@ export default function DashboardMeals() {
             value={meal.calories}
             onChange={(e) => setMeal({ ...meal, calories: e.target.value })}
             placeholder="Kalorien"
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg border border-gray-300 bg-white text-gray-800"
           />
           <input
             name="date"
             type="date"
             value={meal.date || ""}
             onChange={(e) => setMeal({ ...meal, date: e.target.value })}
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg border border-gray-300 bg-white text-gray-800"
           />
           <input
             name="time"
             type="time"
             value={meal.time}
             onChange={(e) => setMeal({ ...meal, time: e.target.value })}
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg border border-gray-300 bg-white text-gray-800"
           />
           <select
             name="type"
@@ -184,7 +219,7 @@ export default function DashboardMeals() {
             onChange={(e) =>
               setMeal({ ...meal, type: e.target.value as MealType })
             }
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg border border-gray-300 bg-white text-gray-800"
           >
             <option>Frühstück</option>
             <option>Mittagessen</option>
@@ -194,7 +229,7 @@ export default function DashboardMeals() {
         </div>
         <button
           type="submit"
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white w-full"
+          className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white w-full"
         >
           Hinzufügen
         </button>
@@ -205,7 +240,7 @@ export default function DashboardMeals() {
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as any)}
-          className="p-2 bg-gray-800 text-white rounded"
+          className="p-2 border border-gray-300 bg-white text-gray-800 rounded"
         >
           <option value="day">Tagesansicht</option>
           <option value="week">Wochenansicht</option>
@@ -215,15 +250,15 @@ export default function DashboardMeals() {
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="p-2 bg-gray-800 text-white rounded"
+          className="p-2 border border-gray-300 bg-white text-gray-800 rounded"
         />
       </div>
 
       {/* TOTAL */}
-      <div className="bg-gray-800 p-4 rounded-xl flex justify-between items-center">
+      <div className="bg-gray-100 p-4 rounded-xl flex justify-between items-center shadow-sm">
         <div>
-          <h3 className="text-gray-400 text-sm">Kalorienüberwachung</h3>
-          <p className="text-xl font-bold text-white">
+          <h3 className="text-gray-600 text-sm">Kalorienüberwachung</h3>
+          <p className="text-xl font-semibold text-gray-800">
             {period === "day"
               ? "Tägliche Kalorienbilanz"
               : period === "week"
@@ -232,15 +267,15 @@ export default function DashboardMeals() {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-gray-400 text-sm">Gegessen</p>
-          <p className="text-3xl font-bold text-green-500">{totalCalories}</p>
-          <span className="text-gray-400 text-sm">kcal</span>
+          <p className="text-gray-500 text-sm">Gegessen</p>
+          <p className="text-3xl font-bold text-green-600">{totalCalories}</p>
+          <span className="text-gray-500 text-sm">kcal</span>
         </div>
       </div>
 
-      {/* LISTE DES REPAS */}
+      {/* LISTE */}
       <div>
-        <h4 className="text-gray-400 text-sm mb-2">Mahlzeiten</h4>
+        <h4 className="text-gray-600 text-sm mb-2">Mahlzeiten</h4>
         {meals.length === 0 ? (
           <p className="text-gray-500">Keine Einträge</p>
         ) : (
@@ -248,7 +283,7 @@ export default function DashboardMeals() {
             {meals.map((m) => (
               <li
                 key={m.id}
-                className="flex justify-between items-center bg-gray-800 p-3 rounded-lg"
+                className="flex justify-between items-center bg-white border border-gray-200 p-3 rounded-lg shadow-sm"
               >
                 {editingMeal?.id === m.id ? (
                   <div className="flex flex-col w-full gap-2">
@@ -257,7 +292,7 @@ export default function DashboardMeals() {
                       onChange={(e) =>
                         setEditingMeal({ ...editingMeal, name: e.target.value })
                       }
-                      className="p-1 rounded bg-gray-700 text-white"
+                      className="p-1 rounded border border-gray-300 bg-white text-gray-800"
                     />
                     <input
                       value={editingMeal.calories}
@@ -268,18 +303,18 @@ export default function DashboardMeals() {
                           calories: Number(e.target.value),
                         })
                       }
-                      className="p-1 rounded bg-gray-700 text-white"
+                      className="p-1 rounded border border-gray-300 bg-white text-gray-800"
                     />
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={handleSaveEdit}
-                        className="px-3 py-1 bg-green-600 rounded text-white"
+                        className="px-3 py-1 bg-green-500 rounded text-white"
                       >
                         Speichern
                       </button>
                       <button
                         onClick={() => setEditingMeal(null)}
-                        className="px-3 py-1 bg-gray-600 rounded text-white"
+                        className="px-3 py-1 bg-gray-300 rounded text-gray-700"
                       >
                         Abbrechen
                       </button>
@@ -288,39 +323,40 @@ export default function DashboardMeals() {
                 ) : (
                   <>
                     <div>
-                      <p className="font-semibold text-white">{m.name}</p>
-                      <div className="text-sm text-gray-400 flex gap-2 items-center">
+                      <p className="font-semibold text-gray-800">{m.name}</p>
+                      <div className="text-sm text-gray-500 flex gap-2 items-center">
                         {m.time && <span>{m.time}</span>}
                         {m.type && (
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               m.type === "Frühstück"
-                                ? "bg-yellow-500/20 text-yellow-400"
+                                ? "bg-yellow-100 text-yellow-700"
                                 : m.type === "Mittagessen"
-                                ? "bg-blue-500/20 text-blue-400"
+                                ? "bg-blue-100 text-blue-700"
                                 : m.type === "Abendessen"
-                                ? "bg-purple-500/20 text-purple-400"
-                                : "bg-green-500/20 text-green-400"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-green-100 text-green-700"
                             }`}
                           >
                             {m.type}
                           </span>
                         )}
+                        {m.amount && <span className="text-xs">({m.amount}g)</span>}
                       </div>
                     </div>
                     <div className="flex gap-3 items-center">
-                      <p className="font-semibold text-gray-200">
+                      <p className="font-semibold text-gray-700">
                         {m.calories} kcal
                       </p>
                       <button
                         onClick={() => setEditingMeal(m)}
-                        className="text-blue-400 hover:text-blue-500"
+                        className="text-blue-500 hover:text-blue-600"
                       >
                         ✏️
                       </button>
                       <button
                         onClick={() => handleDelete(m.id)}
-                        className="text-red-400 hover:text-red-500"
+                        className="text-red-500 hover:text-red-600"
                         title="Löschen"
                       >
                         🗑️

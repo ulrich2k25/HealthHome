@@ -2,7 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Vitalwerte from "../vitalswerte/page";
-import { io } from "socket.io-client";
+//import { io } from "socket.io-client";
+import { getSocket } from "@/lib/socket";
+
 
 import {
   ResponsiveContainer,
@@ -25,40 +27,44 @@ import {
   Thermometer,
 } from "lucide-react";
 
-const API_URL = "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ||"http://localhost:4000/api";
 
 export default function Dashboard() {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+ // const [isAuthorized, setIsAuthorized] = useState(false);
+  //const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeTab, setActiveTab] = useState<"herz" | "schlaf" | "schritte" | "kalorien">("herz");
 
   const [vitals, setVitals] = useState<any[]>([]);
   const [meals, setMeals] = useState<any[]>([]);
-  const [showVitalModal, setShowVitalModal] = useState(false);
+  //const [showVitalModal, setShowVitalModal] = useState(false);
 
   // ✅ Vérification du token
-  useEffect(() => {
+  /*useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) router.push("/login");
     else setIsAuthorized(true);
     setCheckingAuth(false);
-  }, [router]);
+  }, [router]);*/
 
   // ✅ Fonctions de chargement
   const fetchVitals = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/vitals`);
-      const data = await res.json();
-      setVitals(data || []);
-    } catch (err) {
-      console.error("Fehler beim Laden der Vitalwerte:", err);
-    }
-  };
+  try {
+    const res = await fetch(`${API_URL}/vitals`);
+    const data = await res.json();
+
+    // ✅ Si le backend renvoie un objet (et non un tableau), on le force en tableau
+    const arrayData = Array.isArray(data) ? data : [data];
+    setVitals(arrayData);
+  } catch (err) {
+    console.error("Fehler beim Laden der Vitalwerte:", err);
+  }
+};
+
 
   const fetchMeals = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/nutrition`);
+      const res = await fetch(`${API_URL}/nutrition`);
       const data = await res.json();
       setMeals(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -69,7 +75,7 @@ export default function Dashboard() {
 
   // ✅ Initialisation Socket.IO (une seule fois)
   useEffect(() => {
-    const socket = io(API_URL);
+    const socket = getSocket();
 
     // Chargement initial
     fetchVitals();
@@ -142,14 +148,14 @@ export default function Dashboard() {
     }
   };
 
-  if (checkingAuth)
+ /* if (checkingAuth)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-800">
         <p>Überprüfung der Anmeldung...</p>
       </div>
-    );
+    );*/
 
-  if (!isAuthorized) return null;
+  //if (!isAuthorized) return null;
 
   return (
     <div className="space-y-6 p-6 bg-gray-50 min-h-screen text-gray-800">

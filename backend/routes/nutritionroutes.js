@@ -50,7 +50,20 @@ router.get("/by-date/:date", (req, res) => {
   });
 
   
-
+router.get("/by-range", (req, res) => {
+    const { start, end } = req.query;
+    if (!start || !end) return res.status(400).json({ error: "start et end requis" });
+  
+    const sql = `
+      SELECT * FROM nutrition
+      WHERE DATE(date) BETWEEN ? AND ?
+      ORDER BY date DESC
+    `;
+    db.query(sql, [start, end], (err, results) => {
+      if (err) return res.status(500).json({ error: err });
+      res.json(results);
+    });
+  });
 
 
   //  Ajouter une nouvelle entrée nutritionnelle
@@ -59,7 +72,7 @@ router.get("/by-date/:date", (req, res) => {
     if (!name || !calories)
       return res.status(400).json({ error: "Champs obligatoires manquants" });
 
-    const now = date || new Date();
+    const now = date || new Date().toISOString().slice(0, 10);
     const sql =
       "INSERT INTO nutrition (name, amount, calories, time, type, date) VALUES (?, ?, ?, ?, ?, ?)";
     db.query(sql, [name, amount, calories, time, type, now], (err, result) => {

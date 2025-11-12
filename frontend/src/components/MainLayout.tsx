@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { getSocket } from "../lib/socket";
+
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -10,12 +12,36 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
 
+  useEffect(() => {
+    const s = getSocket();
+  
+    const onConnect = () => console.log("socket connect", s.id);
+    const onDisconnect = () => console.log("socket disconnect", s.id);
+  
+    s.on("connect", onConnect);
+    s.on("disconnect", onDisconnect);
+  
+    return () => {
+      // On ne déconnecte pas ici. On enlève seulement les listeners.
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+    };
+  }, []);
+  
+
   // Liste des pages publiques
   const publicPages = ["/login", "/register", "/verifyemail"];
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken") || localStorage.getItem("token");
-
+    const getToken = () => {
+      const fromLocal = localStorage.getItem("authToken") || localStorage.getItem("token");
+      const fromSession = sessionStorage.getItem("authToken") || sessionStorage.getItem("token");
+      const fromCookie = document.cookie.split("; ").find(c => c.startsWith("token="))?.split("=")[1];
+      return fromLocal || fromSession || fromCookie || null;
+    };
+  
+    const token = getToken();
+  
     if (token) {
       setIsLoggedIn(true);
     } else {

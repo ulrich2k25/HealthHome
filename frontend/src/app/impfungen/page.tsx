@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
+import { useAutoSave } from "../../lib/useAutoSave";
 
 // ✅ 1. Définis ton type Vaccination une seule fois
 type Vaccination = {
