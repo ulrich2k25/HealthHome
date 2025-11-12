@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "json2csv": "^6.0.0-alpha.2",
     "lucide-react": "^0.552.0",
     "next": "^16.0.0",
     "react": "^19.2.0",

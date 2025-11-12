@@ -5,7 +5,7 @@ import axios from "axios";
 import scheduleNotification from "../../utils/notifications";
 
 type Termin = {
-  _id?: string;
+  id?: number; // ✅ remplacé _id par id
   title: string;
   date: string;
   time: string;
@@ -13,7 +13,8 @@ type Termin = {
   location?: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+// ✅ API directe vers /api/termin
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/termin";
 
 export default function TerminPage() {
   const [items, setItems] = useState<Termin[]>([]);
@@ -24,21 +25,32 @@ export default function TerminPage() {
     doctor: "",
     location: "",
   });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null); // ✅ id numérique
 
   // ✅ Charger tous les rendez-vous
   const load = async () => {
-    const res = await axios.get(`${API}/termin`);
-    setItems(res.data || []);
+    try {
+      const res = await axios.get(API);
+      setItems(res.data || []);
+    } catch (err) {
+      console.error("❌ Fehler beim Laden:", err);
+    }
   };
 
-  // ✅ Sauvegarder un nouveau rendez-vous et planifier la notification
+  // ✅ Ajouter ou modifier un rendez-vous
   const save = async () => {
     if (!form.title || !form.date || !form.time)
       return alert("Titel, Datum und Uhrzeit sind erforderlich.");
 
     try {
-      // ➕ Enregistrement du rendez-vous
-      await axios.post(`${API}/termin`, form);
+      if (isEditing && editId) {
+        // ✏️ Mise à jour
+        await axios.put(`${API}/${editId}`, form);
+      } else {
+        // ➕ Nouveau rendez-vous
+        await axios.post(API, form);
+      }
 
       // 🔔 Planification locale
       const fullDateTime = `${form.date}T${form.time}`;
@@ -46,76 +58,61 @@ export default function TerminPage() {
       const target = new Date(fullDateTime);
       const delay = target.getTime() - now.getTime();
 
-      console.log("📅 Notification prévue :", fullDateTime);
-      console.log("⏳ Délai (ms) :", delay);
-
-      if (isNaN(target.getTime()) || delay <= 0) {
-        console.warn("⛔ La date est invalide ou déjà passée :", fullDateTime);
-      } else {
-        // 💾 Sauvegarde locale pour replanification après refresh
-        localStorage.setItem(
-          "pendingTerminNotification",
-          JSON.stringify({
-            title: "📅 HealthHome - Termin",
-            message: `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
-            dateTime: fullDateTime,
-          })
-        );
-
-        // 🔔 Planifie la notification (pendant que la page reste ouverte)
+      if (!isNaN(target.getTime()) && delay > 0) {
         await scheduleNotification(
           "📅 HealthHome - Termin",
           `Erinnerung an Ihren Termin: ${form.title} um ${form.time}`,
           fullDateTime
         );
-
-        console.log(
-          `✅ Notification programmée pour ${target.toLocaleString("de-DE", {
-            timeZone: "Europe/Berlin",
-          })}`
-        );
       }
 
-      // ✅ Réinitialisation du formulaire et rechargement
+      // ✅ Reset + reload
       setForm({ title: "", date: "", time: "", doctor: "", location: "" });
+      setIsEditing(false);
+      setEditId(null);
       load();
     } catch (err) {
-      console.error("❌ Fehler beim Speichern oder bei der Benachrichtigung:", err);
+      console.error("❌ Fehler beim Speichern:", err);
     }
   };
 
-  // ✅ Replanification automatique après un refresh
+  // ✅ Supprimer un rendez-vous
+  const remove = async (id: number | undefined) => {
+    if (!window.confirm("Diesen Termin wirklich löschen?")) return;
+    try {
+      await axios.delete(`${API}/${id}`); // ✅ utilise id (numérique)
+      load();
+    } catch (err) {
+      console.error("Fehler beim Löschen:", err);
+    }
+  };
+
+  // ✅ Préparer le formulaire pour l’édition
+  const edit = (t: Termin) => {
+    setForm({
+      title: t.title,
+      date: t.date ? t.date.split("T")[0] : "",
+      time: t.time,
+      doctor: t.doctor,
+      location: t.location,
+    });
+    setIsEditing(true);
+    setEditId(t.id || null); // ✅ utilise id
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   useEffect(() => {
     load();
-
-    const stored = JSON.parse(localStorage.getItem("pendingTerminNotification") || "null");
-    if (stored) {
-      const now = new Date().getTime();
-      const target = new Date(stored.dateTime).getTime();
-
-      if (now >= target) {
-        // 🔔 Si le moment est déjà arrivé, on notifie immédiatement
-        new Notification(stored.title, { body: stored.message });
-        localStorage.removeItem("pendingTerminNotification");
-      } else {
-        // ⏳ Sinon on reprogramme
-        const delay = target - now;
-        console.log(
-          `⏳ Replanification Termin dans ${Math.round(delay / 1000)}s`
-        );
-        setTimeout(() => {
-          new Notification(stored.title, { body: stored.message });
-          localStorage.removeItem("pendingTerminNotification");
-        }, delay);
-      }
-    }
   }, []);
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] text-[#1F2937] space-y-8 p-6">
       {/* Section: nouveau rendez-vous */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-md">
-        <h3 className="font-semibold text-xl mb-4">Neuen Termin erstellen</h3>
+        <h3 className="font-semibold text-xl mb-4">
+          {isEditing ? "Termin bearbeiten" : "Neuen Termin erstellen"}
+        </h3>
+
         <div className="grid md:grid-cols-5 gap-4">
           {["title", "date", "time", "doctor", "location"].map((field) => (
             <div key={field}>
@@ -126,7 +123,15 @@ export default function TerminPage() {
                 id={field}
                 type={field === "date" ? "date" : field === "time" ? "time" : "text"}
                 className="p-2 rounded bg-[#E3ECF3] border border-gray-300 text-[#1F2937] placeholder-gray-500 focus:ring-2 focus:ring-blue-400 outline-none w-full"
-                placeholder={field === "title" ? "Titel" : field === "doctor" ? "Arzt" : field === "location" ? "Ort" : ""}
+                placeholder={
+                  field === "title"
+                    ? "Titel"
+                    : field === "doctor"
+                    ? "Arzt"
+                    : field === "location"
+                    ? "Ort"
+                    : ""
+                }
                 value={(form as any)[field]}
                 onChange={(e) => setForm({ ...form, [field]: e.target.value })}
               />
@@ -134,13 +139,26 @@ export default function TerminPage() {
           ))}
         </div>
 
-        <button
-          onClick={save}
-                 
-          className=" mt-4 bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded-md text-white font-semibold"  
-        >
-          Speichern
-        </button>
+        <div className="flex gap-3 mt-4">
+          <button
+            onClick={save}
+            className="bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded-md text-white font-semibold"
+          >
+            {isEditing ? "Aktualisieren" : "Speichern"}
+          </button>
+          {isEditing && (
+            <button
+              onClick={() => {
+                setForm({ title: "", date: "", time: "", doctor: "", location: "" });
+                setIsEditing(false);
+                setEditId(null);
+              }}
+              className="bg-gray-500 hover:bg-gray-600 transition px-5 py-2 rounded-md text-white font-semibold"
+            >
+              Abbrechen
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Section: rendez-vous existants */}
@@ -155,30 +173,50 @@ export default function TerminPage() {
                 <th className="p-2">Uhrzeit</th>
                 <th className="p-2">Arzt</th>
                 <th className="p-2">Ort</th>
+                <th className="p-2">Aktionen</th>
               </tr>
             </thead>
             <tbody>
               {items.map((t, i) => (
                 <tr
-                  key={t._id ?? i}
+                  key={t.id ?? i} // ✅ utilise id ici
                   className="border-t border-gray-200 hover:bg-[#E3ECF3] transition"
                 >
                   <td className="p-2">{t.title}</td>
                   <td className="p-2">
-                    {new Date(t.date).toLocaleDateString("sv-SE", {
-                      timeZone: "Europe/Berlin",
-                    })}
+                    {t.date
+                      ? new Date(t.date).toLocaleDateString("sv-SE", {
+                          timeZone: "Europe/Berlin",
+                        })
+                      : "-"}
                   </td>
                   <td className="p-2">{t.time}</td>
                   <td className="p-2">{t.doctor}</td>
                   <td className="p-2">{t.location}</td>
+                  <td className="p-2 flex gap-3">
+                    <button
+                      onClick={() => edit(t)}
+                      className="text-blue-500 hover:text-blue-700"
+                      title="Bearbeiten"
+                    >
+                      ✏️
+                    </button>
+
+                    <button
+                      onClick={() => remove(t.id)} // ✅ utilise id
+                      className="text-red-500 hover:text-red-700"
+                      title="Löschen"
+                    >
+                      🗑️
+                    </button>
+                  </td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
                   <td
                     className="p-2 text-gray-500 italic text-center"
-                    colSpan={5}
+                    colSpan={6}
                   >
                     Kein Termin
                   </td>
