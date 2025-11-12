@@ -234,6 +234,21 @@ export default function UserProfilPage() {
             <label className="text-sm text-gray-500" htmlFor="email">E-Mail-Adresse</label>
             <p id="email" className="bg-gray-50 p-2 rounded-md">{user.email}</p>
           </div>
+           <div> <label className="text-sm text-gray-500" htmlFor="alter">Alter</label> 
+           <p id="alter" className="bg-gray-50 p-2 rounded-md">{user.alter_jahre ?? "—"}</p> 
+           </div> 
+           <div> <label className="text-sm text-gray-500" htmlFor="geschlecht">Geschlecht</label> 
+           <p id="geschlecht" className="bg-gray-50 p-2 rounded-md">{user.geschlecht ?? "—"}</p> 
+           </div> 
+           <div> <label className="text-sm text-gray-500" htmlFor="gewicht">Gewicht (kg)</label> 
+           <p id="gewicht" className="bg-gray-50 p-2 rounded-md">{user.gewicht ?? "—"}</p> 
+           </div> 
+           <div> <label className="text-sm text-gray-500" htmlFor="groesse">Größe (cm)</label> 
+           <p id="groesse" className="bg-gray-50 p-2 rounded-md">{user.groesse ?? "—"}</p> 
+           </div> 
+           <div className="col-span-2"> <label className="text-sm text-gray-500" htmlFor="allergien">Allergien</label> 
+           <p id="allergien" className="bg-gray-50 p-2 rounded-md">{user.allergien ?? "Keine"}</p> 
+           </div> 
         </div>
 
         {/* Diagnosen */}

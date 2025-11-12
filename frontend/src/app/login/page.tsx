@@ -19,9 +19,13 @@ export default function LoginPage() {
         password,
       });
 
-      setMessage("✅ Connexion réussie !");
-      localStorage.setItem("email", email);
+      // ✅ Sauvegarder l'utilisateur et le token dans le navigateur
+      const user = res.data.user;
       localStorage.setItem("authToken", res.data.token);
+      localStorage.setItem("email", user.email);
+      localStorage.setItem("userId", user.id); // ✅ Ajouté ici
+
+      setMessage("✅ Connexion réussie !");
       router.push("/dashboard");
     } catch (err: any) {
       if (err.response?.status === 401) setMessage("❌ Mot de passe incorrect.");
