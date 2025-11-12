@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Heart,
@@ -9,16 +9,6 @@ import {
   Droplet,
   Thermometer,
 } from "lucide-react";
-
-const mock = [
-  { time: "00:00", bpm: 62 },
-  { time: "04:00", bpm: 58 },
-  { time: "08:00", bpm: 72 },
-  { time: "12:00", bpm: 76 },
-  { time: "16:00", bpm: 82 },
-  { time: "20:00", bpm: 70 },
-  { time: "23:59", bpm: 64 },
-];
 
 interface Meal {
   id?: number;
@@ -54,7 +44,6 @@ function HealthCard({
     </div>
   );
 }
-
 export default function Dashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -63,13 +52,41 @@ export default function Dashboard() {
   const router = useRouter();
   const API_URL = "http://localhost:4000";
 
+  // ✅ Vérification du token
   useEffect(() => {
+    const email = localStorage.getItem("email");
     const token = localStorage.getItem("token");
-    if (!token) router.push("/login");
-    else setIsAuthorized(true);
-    setCheckingAuth(false);
+
+    if (!email || !token) {
+      router.push("/login");
+      return;
+    }
+
+    fetch("http://localhost:4000/api/verify-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, token }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("🔍 Vérification token:", data);
+        if (data.valid) {
+          setIsAuthorized(true);
+        } else {
+          router.push("/login");
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Erreur vérification token:", err);
+        router.push("/login");
+      })
+      .finally(() => {
+        // ✅ On désactive le “chargement”
+        setCheckingAuth(false);
+      });
   }, [router]);
 
+  // === Charger les données santé ===
   useEffect(() => {
     const fetchVitals = async () => {
       try {
@@ -97,14 +114,18 @@ export default function Dashboard() {
     fetchMeals();
   }, []);
 
+  // === Total calories ===
   const totalCalories = Array.isArray(meals)
     ? meals.reduce((sum, m) => sum + Number(m.calories || 0), 0)
     : 0;
 
+  // === Affichage ===
   if (checkingAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 text-gray-800">
-        <p>Überprüfung der Anmeldung...</p>
+        <p className="animate-pulse text-gray-600">
+          🔄 Überprüfung der Anmeldung...
+        </p>
       </div>
     );
   }
@@ -117,7 +138,6 @@ export default function Dashboard() {
         🩺 Gesundheitsübersicht
       </h2>
 
-      {/* Cartes principales */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <HealthCard
           title="Herzfrequenz"

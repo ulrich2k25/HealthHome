@@ -9,7 +9,7 @@ module.exports = (db) => {
   router.post("/register", async (req, res) => {
     const { vorname, nachname, email, password } = req.body;
     if (!email || !password || !vorname || !nachname) {
-      return res.status(400).send("⚠️ Données manquantes.");
+      return res.status(400).send("⚠ Données manquantes.");
     }
 
     try {
@@ -18,7 +18,7 @@ module.exports = (db) => {
         .promise()
         .query("SELECT * FROM users WHERE email = ?", [email]);
       if (existingUser.length > 0)
-        return res.status(409).send("⚠️ Cet email existe déjà.");
+        return res.status(409).send("⚠ Cet email existe déjà.");
 
       // Supprimer si déjà en pending
       const [pending] = await db
@@ -37,10 +37,10 @@ module.exports = (db) => {
           [vorname, nachname, email, hashed, code]
         );
 
-      const message = `Hallo ${vorname},\n\nHier ist Ihr HealthHome-Verifizierungscode : ${code}\n\nCe code expirera dans 10 minutes.`;
+     const message = `Hallo ${vorname},\n\nHier ist Ihr HealthHome-Verifizierungscode : ${code}\n\nCe code expirera dans 10 minutes.`;
       await sendEmail(email, "Code de vérification HealthHome", message);
 
-      console.log("✉️ Email de vérification envoyé à :", email);
+      console.log("✉ Email de vérification envoyé à :", email);
       res.status(201).json({
         success: true,
         message: "✅ Inscription en attente, code envoyé par email.",
@@ -55,7 +55,7 @@ module.exports = (db) => {
   router.post("/verify-code", async (req, res) => {
     const { email, code } = req.body;
     if (!email || !code)
-      return res.status(400).send("⚠️ Email ou code manquant.");
+      return res.status(400).send("⚠ Email ou code manquant.");
 
     try {
       const [pending] = await db
@@ -88,73 +88,86 @@ module.exports = (db) => {
     }
   });
 
-  // === LOGIN (uniquement si verified = 1) ===
-  router.post("/login", (req, res) => {
+  // === LOGIN (avec enregistrement du token en DB) ===
+  router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password)
-      return res.status(400).send("⚠️ Données manquantes.");
+      return res.status(400).send("⚠ Données manquantes.");
 
-    db.query("SELECT * FROM users WHERE email = ?", [email], (err, data) => {
-      if (err) return res.status(500).send("Erreur serveur.");
-      if (data.length === 0)
+    try {
+      const [rows] = await db
+        .promise()
+        .query("SELECT * FROM users WHERE email = ?", [email]);
+
+      if (rows.length === 0)
         return res.status(404).send("❌ Utilisateur non trouvé.");
 
-      const user = data[0];
+      const user = rows[0];
       const isValid = bcrypt.compareSync(password, user.password);
       if (!isValid) return res.status(401).send("❌ Mot de passe incorrect.");
 
       if (user.verified === 0)
         return res
           .status(403)
-          .send("⚠️ Veuillez d'abord vérifier votre email avant de vous connecter.");
+          .send("⚠ Veuillez d'abord vérifier votre email avant de vous connecter.");
 
-      // 🔐 Génère le token JWT
+      // 🔐 Génère un token JWT valable 30 jours
       const token = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET || "secret_key_dev",
-        { expiresIn: "1h" }
+        { expiresIn: "30d" }
       );
 
-      // ✅ On renvoie maintenant l'id + le user complet
+      // 💾 Sauvegarde le token dans la base pour reconnexion ultérieure
+      await db
+        .promise()
+        .query("UPDATE users SET auth_token = ? WHERE email = ?", [token, email]);
+
+      // ✅ Renvoie le token au frontend
       res.json({
         message: "✅ Connexion réussie.",
         token,
         user: {
-          id: user.id,              // ✅ ajouté ici
+          id: user.id,
           vorname: user.vorname,
           nachname: user.nachname,
           email: user.email,
         },
       });
-    });
+    } catch (err) {
+      console.error("Erreur login :", err);
+      res.status(500).send("Erreur serveur lors du login.");
+    }
   });
 
-  // === VÉRIFICATION DU TOKEN ===
-  router.get("/verify-token", (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return res.status(401).json({ valid: false, message: "Token manquant" });
+  // === VÉRIFICATION DU TOKEN (depuis n'importe où) ===
+  router.post("/verify-token", async (req, res) => {
+    const { email, token } = req.body;
 
-    const token = authHeader.split(" ")[1];
+    if (!email || !token)
+      return res.status(400).json({ valid: false, message: "Email ou token manquant" });
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key_dev");
-      const email = decoded.email;
+      // Vérifie que le token est valide (non expiré)
+      jwt.verify(token, process.env.JWT_SECRET || "ton_secret_jwt");
 
-      db.query("SELECT verified FROM users WHERE email = ?", [email], (err, result) => {
-        if (err)
-          return res.status(500).json({ valid: false, message: "Erreur SQL" });
-        if (result.length === 0)
-          return res.status(404).json({ valid: false, message: "Utilisateur non trouvé" });
+      // Vérifie s'il correspond à celui en base
+      const [rows] = await db
+        .promise()
+        .query("SELECT auth_token FROM users WHERE email = ?", [email]);
 
-        if (result[0].verified === 1) {
-          res.json({ valid: true, message: "Utilisateur vérifié" });
-        } else {
-          res.status(403).json({ valid: false, message: "Compte non vérifié" });
-        }
-      });
+      if (rows.length === 0)
+        return res.json({ valid: false, message: "Utilisateur introuvable" });
+
+      if (rows[0].auth_token === token) {
+        return res.json({ valid: true, message: "Token valide" });
+      } else {
+        return res.json({ valid: false, message: "Token invalide" });
+      }
     } catch (err) {
-      return res.status(401).json({ valid: false, message: "Token invalide ou expiré" });
+      return res
+        .status(401)
+        .json({ valid: false, message: "Token expiré ou invalide." });
     }
   });
 
