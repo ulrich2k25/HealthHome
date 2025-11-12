@@ -21,9 +21,18 @@ export default function VerifyPage() {
         code,
       });
 
-      if (res.data.success) {
-        setMessage("✅ Vérification réussie !");
-        setTimeout(() => router.push("/login"), 2000);
+        if (res.data.success) {
+        // ✅ Enregistre automatiquement les infos utilisateur
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("email", res.data.user.email);
+        localStorage.setItem("userId", res.data.user.id);
+
+        setMessage("✅ Vérification réussie ! Redirection en cours...");
+        
+        // 🚀 Redirection directe vers le Dashboard
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1200);
       } else {
         setMessage("❌ Code incorrect ou expiré.");
       }
@@ -76,8 +85,8 @@ export default function VerifyPage() {
         <p
           className={`mt-4 text-sm ${
             message.includes("✅")
-              ? "text-green-400"
-              : "text-red-400"
+              ? "text-blue-500" // bleu pour le succès
+              : "text-orange-500" // orange pour l’erreur
           }`}
         >
           {message}

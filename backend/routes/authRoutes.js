@@ -5,7 +5,7 @@ const sendEmail = require("../utils/sendEmail");
 const router = express.Router();
 
 module.exports = (db) => {
-  // === INSCRIPTION (étape 1 : stocke dans pending_users + envoi du code) ===
+  // === INSCRIPTION ===
   router.post("/register", async (req, res) => {
     const { vorname, nachname, email, password } = req.body;
     if (!email || !password || !vorname || !nachname) {
@@ -13,31 +13,31 @@ module.exports = (db) => {
     }
 
     try {
-      // Vérifie si l'utilisateur existe déjà dans users
-      const [existingUser] = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
+      // Vérifie si l'utilisateur existe déjà
+      const [existingUser] = await db
+        .promise()
+        .query("SELECT * FROM users WHERE email = ?", [email]);
       if (existingUser.length > 0)
         return res.status(409).send("⚠️ Cet email existe déjà.");
 
-      // Vérifie si un enregistrement en attente existe déjà
-      const [pending] = await db.promise().query("SELECT * FROM pending_users WHERE email = ?", [email]);
+      // Supprimer si déjà en pending
+      const [pending] = await db
+        .promise()
+        .query("SELECT * FROM pending_users WHERE email = ?", [email]);
       if (pending.length > 0)
-        await db.promise().query("DELETE FROM pending_users WHERE email = ?", [email]); // on nettoie
+        await db.promise().query("DELETE FROM pending_users WHERE email = ?", [email]);
 
-      // Hash du mot de passe
       const hashed = bcrypt.hashSync(password, 10);
-
-      // Génération du code à 6 chiffres
       const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Insertion dans pending_users
-      await db.promise().query(
-        "INSERT INTO pending_users (vorname, nachname, email, password_hash, verification_code) VALUES (?, ?, ?, ?, ?)",
-        [vorname, nachname, email, hashed, code]
-      );
+      await db
+        .promise()
+        .query(
+          "INSERT INTO pending_users (vorname, nachname, email, password_hash, verification_code) VALUES (?, ?, ?, ?, ?)",
+          [vorname, nachname, email, hashed, code]
+        );
 
-      // Envoi de l’e-mail
       const message = `Hallo ${vorname},\n\nHier ist Ihr HealthHome-Verifizierungscode : ${code}\n\nCe code expirera dans 10 minutes.`;
-
       await sendEmail(email, "Code de vérification HealthHome", message);
 
       console.log("✉️ Email de vérification envoyé à :", email);
@@ -51,18 +51,19 @@ module.exports = (db) => {
     }
   });
 
-  // === VÉRIFICATION DU CODE (étape 2 : transfert vers users) ===
+  // === VÉRIFICATION DU CODE ===
   router.post("/verify-code", async (req, res) => {
     const { email, code } = req.body;
     if (!email || !code)
       return res.status(400).send("⚠️ Email ou code manquant.");
 
     try {
-      // Recherche dans pending_users
-      const [pending] = await db.promise().query(
-        "SELECT * FROM pending_users WHERE email = ? AND verification_code = ?",
-        [email, code]
-      );
+      const [pending] = await db
+        .promise()
+        .query(
+          "SELECT * FROM pending_users WHERE email = ? AND verification_code = ?",
+          [email, code]
+        );
 
       if (pending.length === 0) {
         return res.status(400).send("❌ Code incorrect ou expiré.");
@@ -70,13 +71,13 @@ module.exports = (db) => {
 
       const user = pending[0];
 
-      // Transfert vers users
-      await db.promise().query(
-        "INSERT INTO users (vorname, nachname, email, password, verified, created_at) VALUES (?, ?, ?, ?, 1, NOW())",
-        [user.vorname, user.nachname, user.email, user.password_hash]
-      );
+      await db
+        .promise()
+        .query(
+          "INSERT INTO users (vorname, nachname, email, password, verified, created_at) VALUES (?, ?, ?, ?, 1, NOW())",
+          [user.vorname, user.nachname, user.email, user.password_hash]
+        );
 
-      // Suppression de pending_users après transfert
       await db.promise().query("DELETE FROM pending_users WHERE email = ?", [email]);
 
       console.log("✅ Email vérifié et compte activé :", email);
@@ -87,33 +88,42 @@ module.exports = (db) => {
     }
   });
 
-  // === LOGIN (uniquement si verified = 1) ===
-  router.post("/login", (req, res) => {
+  // === LOGIN (avec enregistrement du token en DB) ===
+  router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password)
-      return res.status(400).send("⚠️ Données manquantes.");
+      return res.status(400).send("⚠ Données manquantes.");
 
-    db.query("SELECT * FROM users WHERE email = ?", [email], (err, data) => {
-      if (err) return res.status(500).send("Erreur serveur.");
-      if (data.length === 0)
+    try {
+      const [rows] = await db
+        .promise()
+        .query("SELECT * FROM users WHERE email = ?", [email]);
+
+      if (rows.length === 0)
         return res.status(404).send("❌ Utilisateur non trouvé.");
 
-      const user = data[0];
+      const user = rows[0];
       const isValid = bcrypt.compareSync(password, user.password);
-      if (!isValid)
-        return res.status(401).send("❌ Mot de passe incorrect.");
+      if (!isValid) return res.status(401).send("❌ Mot de passe incorrect.");
 
-      if (user.verified === 0) {
-        return res.status(403).send("⚠️ Veuillez d'abord vérifier votre email avant de vous connecter.");
-      }
+      if (user.verified === 0)
+        return res
+          .status(403)
+          .send("⚠ Veuillez d'abord vérifier votre email avant de vous connecter.");
 
-      // Génère le token JWT
+      // 🔐 Génère un token JWT valable 30 jours
       const token = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET || "secret_key_dev",
-        { expiresIn: "1h" }
+        { expiresIn: "30d" }
       );
 
+      // 💾 Sauvegarde le token dans la base pour reconnexion ultérieure
+      await db
+        .promise()
+        .query("UPDATE users SET auth_token = ? WHERE email = ?", [token, email]);
+
+      // ✅ Renvoie le token au frontend
       res.json({
         message: "✅ Connexion réussie.",
         token,
@@ -124,35 +134,40 @@ module.exports = (db) => {
           email: user.email,
         },
       });
-    });
+    } catch (err) {
+      console.error("Erreur login :", err);
+      res.status(500).send("Erreur serveur lors du login.");
+    }
   });
 
-  // === VÉRIFICATION DU TOKEN ===
-  router.get("/verify-token", (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return res.status(401).json({ valid: false, message: "Token manquant" });
+  // === VÉRIFICATION DU TOKEN (depuis n'importe où) ===
+  router.post("/verify-token", async (req, res) => {
+    const { email, token } = req.body;
 
-    const token = authHeader.split(" ")[1];
+    if (!email || !token)
+      return res.status(400).json({ valid: false, message: "Email ou token manquant" });
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_key_dev");
-      const email = decoded.email;
+      // Vérifie que le token est valide (non expiré)
+      jwt.verify(token, process.env.JWT_SECRET || "ton_secret_jwt");
 
-      db.query("SELECT verified FROM users WHERE email = ?", [email], (err, result) => {
-        if (err)
-          return res.status(500).json({ valid: false, message: "Erreur SQL" });
-        if (result.length === 0)
-          return res.status(404).json({ valid: false, message: "Utilisateur non trouvé" });
+      // Vérifie s'il correspond à celui en base
+      const [rows] = await db
+        .promise()
+        .query("SELECT auth_token FROM users WHERE email = ?", [email]);
 
-        if (result[0].verified === 1) {
-          res.json({ valid: true, message: "Utilisateur vérifié" });
-        } else {
-          res.status(403).json({ valid: false, message: "Compte non vérifié" });
-        }
-      });
+      if (rows.length === 0)
+        return res.json({ valid: false, message: "Utilisateur introuvable" });
+
+      if (rows[0].auth_token === token) {
+        return res.json({ valid: true, message: "Token valide" });
+      } else {
+        return res.json({ valid: false, message: "Token invalide" });
+      }
     } catch (err) {
-      return res.status(401).json({ valid: false, message: "Token invalide ou expiré" });
+      return res
+        .status(401)
+        .json({ valid: false, message: "Token expiré ou invalide." });
     }
   });
 
