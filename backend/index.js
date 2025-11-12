@@ -3,115 +3,131 @@
 // ======================================================
 
 // 1️⃣ Importation des modules nécessaires
-const express = require('express');      // Framework web principal
-const cors = require('cors');            // Autorise les requêtes cross-domain (Next.js → Express)
-const mysql = require('mysql2');         // Pour se connecter à la base MySQL
-require('dotenv').config();              // Charge les variables depuis le fichier .env
+const express = require("express");
+const cors = require("cors");
+const mysql = require("mysql2");
+const http = require("http"); // ✅ Nécessaire pour socket.io
+const { Server } = require("socket.io"); // ✅ Socket.IO
+require("dotenv").config();
 
 // 2️⃣ Création de l'application Express
 const app = express();
-app.use(cors({
-    origin: "http://localhost:3001", // ton frontend
+
+// Middleware pour gérer les CORS et le JSON
+app.use(
+  cors({
+    origin: "http://localhost:3001", // 🔹 ton frontend Next.js
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  }));
+  })
+);
 app.use(express.json());
 
 // ======================================================
-// 🔗 Connexion à la base de données MySQL (hébergée en ligne)
+// 🔗 Connexion à la base de données MySQL
 // ======================================================
-
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT
+  port: process.env.DB_PORT,
 });
 
 db.connect((err) => {
   if (err) {
-    console.error('❌ Erreur de connexion à la base distante :', err);
+    console.error("❌ Erreur de connexion à la base distante :", err);
   } else {
-    console.log('✅ Connecté à la base MySQL distante (FreeSQLDatabase.com)');
+    console.log("✅ Connecté à la base MySQL distante (Hostinger ou FreeSQLDatabase)");
   }
 });
 
 // ======================================================
-// 🧩 Routes de test
+// 🧩 Routes de base
 // ======================================================
-
-// Test simple pour vérifier que le backend fonctionne
-app.get('/', (req, res) => {
-  res.send('✅ API HealthHome fonctionne parfaitement (base distante connectée)');
+app.get("/", (req, res) => {
+  res.send("✅ API HealthHome fonctionne parfaitement (base distante connectée)");
 });
 
-// Test SQL pour vérifier la base de données
-app.get('/api/healthcheck', (req, res) => {
-  db.query('SELECT 1 AS ok', (err, result) => {
-    if (err) return res.status(500).send('Erreur SQL');
-    res.json({ db: result[0].ok === 1 ? 'ok' : 'fail' });
+app.get("/api/healthcheck", (req, res) => {
+  db.query("SELECT 1 AS ok", (err, result) => {
+    if (err) return res.status(500).send("Erreur SQL");
+    res.json({ db: result[0].ok === 1 ? "ok" : "fail" });
   });
 });
 
 // ======================================================
-// 📦 Importation des routes (modules séparés)
+// 📦 Importation de toutes les routes du projet
 // ======================================================
 
-// Authentification (login / register / verify)
+// Authentification (register / login / verify)
 const authRoutes = require("./routes/authRoutes")(db);
-app.use('/api', authRoutes);
+app.use("/api", authRoutes);
 
-// ✅ === Import de la route du profil utilisateur ===
-const userProfileRoutes = require('./routes/userroutes')(db);
-app.use('/api/user', userProfileRoutes);
+// Profil utilisateur
+const userProfileRoutes = require("./routes/userroutes")(db);
+app.use("/api/user", userProfileRoutes);
 
-const editProfileRoutes = require('./routes/editprofileroutes')(db);
-app.use('/api/user', editProfileRoutes);
+// Édition du profil utilisateur
+const editProfileRoutes = require("./routes/editprofileroutes")(db);
+app.use("/api/user", editProfileRoutes);
 
+// Diagnostic médical
 const diagnosisRoutes = require("./routes/diagnosisRoutes")(db);
 app.use("/api/diagnosis", diagnosisRoutes);
 
-
-// Gestion des rendez-vous
+// Rendez-vous
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
-
-// import nutritionroutes
+// Nutrition
 const nutritionRoutes = require("./routes/nutritionroutes")(db);
 app.use("/api/nutrition", nutritionRoutes);
 
-// Gestion des vaccinations
+// Vaccinations
 const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
 app.use("/api/vaccinations", vaccinationRoutes);
 
-// Gestion des médicaments
+// Médicaments
 const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
 app.use("/api/medikamente", medikamenteRoutes);
 
+// Valeurs vitales
 const vitalsroutes = require("./routes/vitalsroutes")(db);
 app.use("/api/vitals", vitalsroutes);
- 
 
-// 🚀 Démarrage du serveur
-app.listen(4000, () => {
-  console.log('🚀 Backend démarré sur http://localhost:4000');
 // Exportation PDF / CSV
 const exportRoutes = require("./routes/exportRoutes");
 app.use("/api", exportRoutes);
 
-// Envoi des mails (PDF ou CSV au médecin)
+// Envoi des mails au médecin
 const mailRoutes = require("./routes/mailRoutes");
 app.use("/api", mailRoutes);
 
 // ======================================================
-// 🟢 Lancement du serveur Express
+// ⚡ Configuration Socket.IO — communication en temps réel
 // ======================================================
-const PORT = 4000;
+const server = http.createServer(app);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend démarré sur http://localhost:${PORT}`);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3001",
+    methods: ["GET", "POST"],
+  },
 });
 
-})
+io.on("connection", (socket) => {
+  console.log("🟢 Nouveau client connecté :", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("🔴 Client déconnecté :", socket.id);
+  });
+});
+
+// ======================================================
+// 🟢 Lancement du serveur
+// ======================================================
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`🚀 Backend démarré sur http://localhost:${PORT}`);
+});

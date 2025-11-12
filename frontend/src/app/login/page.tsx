@@ -19,21 +19,35 @@ export default function LoginPage() {
         password,
       });
 
-      // ✅ Sauvegarder l'utilisateur et le token dans le navigateur
+     
+      // ✅ Sauvegarde du token et de l'email dans localStorage
       const user = res.data.user;
-      localStorage.setItem("authToken", res.data.token);
+      const token = res.data.token;
+
+      // ⚙ Normalisation du nom de la clé ("token" pour être cohérent avec la vérif)
+      localStorage.setItem("token", token);
       localStorage.setItem("email", user.email);
-      localStorage.setItem("userId", user.id); // ✅ Ajouté ici
+      localStorage.setItem("userId", user.id);
 
       setMessage("✅ Connexion réussie !");
-      router.push("/dashboard");
+      
+      // Attendre une petite seconde avant redirection
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 600);
+
     } catch (err: any) {
-      if (err.response?.status === 401) setMessage("❌ Mot de passe incorrect.");
-      else if (err.response?.status === 404) setMessage("❌ Utilisateur non trouvé.");
-      else setMessage("⚠️ Erreur de connexion au serveur.");
+      if (err.response?.status === 401)
+        setMessage("❌ Mot de passe incorrect.");
+      else if (err.response?.status === 404)
+        setMessage("❌ Utilisateur non trouvé.");
+      else if (err.response?.status === 403)
+        setMessage("⚠ Veuillez d'abord vérifier votre email.");
+      else
+        setMessage("⚠ Erreur de connexion au serveur.");
     }
   };
-
+  
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen text-[#1F2937]"
