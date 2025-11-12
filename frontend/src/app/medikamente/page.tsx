@@ -25,7 +25,12 @@ export default function MedikamentePage() {
     time: "",
     taken: false,
   });
+<<<<<<< HEAD
   useAutoSave("medikamente", form, setForm, "http://localhost:4000/api/backup");
+=======
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+>>>>>>> 94e2b4840c72901e53f07dfccdda66cec976c0e7
 
   // ✅ Charger tous les médicaments
   const load = async () => {
@@ -33,12 +38,20 @@ export default function MedikamentePage() {
     setItems(res.data || []);
   };
 
-  // ✅ Sauvegarder un médicament + planifier la notification
+  // ✅ Sauvegarder ou modifier un médicament + planifier la notification
   const save = async () => {
     if (!form.name || !form.time)
       return alert("Name und Uhrzeit sind erforderlich.");
 
-    await axios.post(`${API}/medikamente`, form);
+    if (isEditing && editId) {
+      // ✏️ Mettre à jour un médicament
+      await axios.put(`${API}/medikamente/${editId}`, form);
+      setIsEditing(false);
+      setEditId(null);
+    } else {
+      // ➕ Ajouter un nouveau médicament
+      await axios.post(`${API}/medikamente`, form);
+    }
 
     // 1️⃣ On prend la date saisie ou la date d'aujourd'hui
     const dateString = form.date
@@ -50,13 +63,9 @@ export default function MedikamentePage() {
     const delay = target.getTime() - now.getTime();
 
     console.log("💊 Notification prévue :", fullDateTime);
-    console.log("⏳ Délai (ms) :", delay);
 
     // 2️⃣ Vérifie si la date est future
-    if (isNaN(target.getTime()) || delay <= 0) {
-      console.warn("⛔ La date est invalide ou déjà passée :", fullDateTime);
-    } else {
-      // 💾 Sauvegarde dans localStorage pour replanifier après refresh
+    if (!isNaN(target.getTime()) && delay > 0) {
       localStorage.setItem(
         "pendingMedNotification",
         JSON.stringify({
@@ -66,7 +75,6 @@ export default function MedikamentePage() {
         })
       );
 
-      // 🔔 Notification immédiate (si la page reste ouverte)
       await scheduleNotification(
         "💊 HealthHome",
         `Vergessen Sie nicht, Ihre Medikamente einzunehmen : ${form.name}`,
@@ -80,7 +88,7 @@ export default function MedikamentePage() {
       );
     }
 
-    // 🧹 Vide le formulaire et recharge la liste
+    // 🧹 Réinitialise et recharge
     setForm({ name: "", dose: "", date: "", time: "", taken: false });
     load();
   };
@@ -95,11 +103,9 @@ export default function MedikamentePage() {
       const target = new Date(stored.dateTime).getTime();
 
       if (now >= target) {
-        // 🔔 Si l'heure est passée, on notifie tout de suite
         new Notification(stored.title, { body: stored.message });
         localStorage.removeItem("pendingMedNotification");
       } else {
-        // ⏳ Sinon on reprogramme la notification
         const delay = target - now;
         console.log(
           `⏳ Replanification médicament dans ${Math.round(delay / 1000)}s`
@@ -124,22 +130,44 @@ export default function MedikamentePage() {
   };
 
   const remove = async (id: number) => {
+    if (!window.confirm("Dieses Medikament wirklich löschen?")) return;
     await axios.delete(`${API}/medikamente/${id}`);
     load();
   };
 
+  // ✅ Éditer un médicament
+  const edit = (m: Medikament) => {
+    setForm({
+      name: m.name,
+      dose: m.dose,
+      date: m.date ? m.date.split("T")[0] : "",
+      time: m.time,
+      taken: m.taken,
+    });
+    setIsEditing(true);
+    setEditId(m.id || null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 space-y-8 p-6">
-      {/* Section: ajouter un médicament */}
+      {/* Section: ajouter / modifier un médicament */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-lg">
-        <h3 className="font-semibold text-xl mb-4 text-gray-900">Neues Medikament hinzufügen</h3>
-        <form className="grid md:grid-cols-4 gap-3" onSubmit={(e) => { e.preventDefault(); save(); }}>
+        <h3 className="font-semibold text-xl mb-4 text-gray-900">
+          {isEditing ? "Medikament bearbeiten" : "Neues Medikament hinzufügen"}
+        </h3>
+        <form
+          className="grid md:grid-cols-4 gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+        >
           <label className="flex flex-col">
             <span className="text-sm text-gray-700 mb-1">Medikament</span>
             <input
               className="p-2 rounded border border-gray-300 text-gray-900"
               placeholder="Medikament"
-              title="Medikament"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -150,7 +178,6 @@ export default function MedikamentePage() {
             <input
               className="p-2 rounded border border-gray-300 text-gray-900"
               placeholder="Dosis (z.B. 100mg)"
-              title="Dosis"
               value={form.dose}
               onChange={(e) => setForm({ ...form, dose: e.target.value })}
             />
@@ -161,7 +188,6 @@ export default function MedikamentePage() {
             <input
               type="date"
               className="p-2 rounded border border-gray-300 text-gray-900"
-              title="Datum"
               value={form.date || ""}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
@@ -172,19 +198,31 @@ export default function MedikamentePage() {
             <input
               type="time"
               className="p-2 rounded border border-gray-300 text-gray-900"
-              title="Uhrzeit"
               value={form.time || ""}
               onChange={(e) => setForm({ ...form, time: e.target.value })}
             />
           </label>
 
-          <div className="col-span-4 mt-4">
+          <div className="col-span-4 mt-4 flex gap-3">
             <button
               type="submit"
               className="bg-green-600 hover:bg-green-700 transition px-5 py-2 rounded-md text-white font-semibold"
             >
-              Speichern
+              {isEditing ? "Aktualisieren" : "Speichern"}
             </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setForm({ name: "", dose: "", date: "", time: "", taken: false });
+                  setIsEditing(false);
+                  setEditId(null);
+                }}
+                className="bg-gray-500 hover:bg-gray-600 transition px-5 py-2 rounded-md text-white font-semibold"
+              >
+                Abbrechen
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -217,6 +255,12 @@ export default function MedikamentePage() {
                   className="px-4 py-1 rounded bg-red-600 hover:bg-red-700 text-white"
                 >
                   Vergessen
+                </button>
+                <button
+                  onClick={() => edit(m)}
+                  className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  ✏️
                 </button>
                 <button
                   onClick={() => remove(m.id!)}

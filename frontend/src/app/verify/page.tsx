@@ -76,8 +76,8 @@ export default function VerifyPage() {
         <p
           className={`mt-4 text-sm ${
             message.includes("✅")
-              ? "text-green-400"
-              : "text-red-400"
+              ? "text-blue-500" // bleu pour le succès
+              : "text-orange-500" // orange pour l’erreur
           }`}
         >
           {message}

@@ -89,10 +89,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             >
               Medikamente
             </Link>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 94e2b4840c72901e53f07dfccdda66cec976c0e7
             <Link
               className="block px-3 py-2 rounded-md hover:bg-gray-200 hover:text-gray-900 transition duration-200"
               href="/mahlzeit"
             >
+<<<<<<< HEAD
               mahlzeit
             </Link>
             <Link
@@ -101,6 +106,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             >
               vitalswerte
             </Link>
+=======
+              Mahlzeit
+            </Link>
+           
+>>>>>>> 94e2b4840c72901e53f07dfccdda66cec976c0e7
           </nav>
         </aside>
       )}
