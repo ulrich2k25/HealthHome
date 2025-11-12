@@ -17,11 +17,12 @@ export default function EditProfilePage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
+
   // Charger les infos utilisateur existantes
   useEffect(() => {
     const storedEmail = localStorage.getItem("email");
     if (!storedEmail) {
-      setMessage("⚠️ Kein Benutzer angemeldet!");
+      setMessage(" Kein Benutzer angemeldet!");
       setLoading(false);
       return;
     }
@@ -29,6 +30,8 @@ export default function EditProfilePage() {
     setEmail(storedEmail);
     fetchUserInfo(storedEmail);
   }, []);
+
+
 
   // Charger les infos depuis la base de données
   const fetchUserInfo = async (email: string) => {
