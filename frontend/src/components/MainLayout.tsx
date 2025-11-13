@@ -111,7 +111,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 setShowExportBox((prev) => !prev);
                 setShowMailBox(false);
               }}
-              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-all shadow-md hover:shadow-lg mb-2"
+              className="w-full bg-slate-900 text-white py-2 rounded hover:bg-white-700 transition-all shadow-md hover:shadow-lg mb-2"
             >
               📊 Datenexport
             </button>

@@ -44,7 +44,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="absolute bottom-6 text-[#6B7280] text-sm">
-        © {new Date().getFullYear()} HealthHome. Tous droits réservés.
+        © {new Date().getFullYear()} HealthHome. Alle Rechte vorbehalten.
       </footer>
     </div>
   );

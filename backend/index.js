@@ -2,22 +2,20 @@
 // 🚀 index.js — Point d’entrée du backend HealthHome
 // ======================================================
 
-// 1️⃣ Importation des modules nécessaires
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
-const http = require("http"); // ✅ Nécessaire pour socket.io
-const { Server } = require("socket.io"); // ✅ Socket.IO
+const http = require("http");
+const { Server } = require("socket.io");
 require("dotenv").config();
 
-// 2️⃣ Création de l'application Express
+// 1️⃣ Création de l’application Express
 const app = express();
 app.use(cors({
-    origin: "http://localhost:3000", // ton frontend
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 app.use(express.json());
 
 // ======================================================
@@ -40,7 +38,25 @@ db.connect((err) => {
 });
 
 // ======================================================
-// 🧩 Routes de base
+// ⚡ Serveur HTTP + Socket.IO (⚠️ Doit être avant les routes)
+// ======================================================
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("🟢 Nouveau client connecté :", socket.id);
+  socket.on("disconnect", () => {
+    console.log("🔴 Client déconnecté :", socket.id);
+  });
+});
+
+// ======================================================
+// 🧩 Routes
 // ======================================================
 app.get("/", (req, res) => {
   res.send("✅ API HealthHome fonctionne parfaitement (base distante connectée)");
@@ -53,73 +69,49 @@ app.get("/api/healthcheck", (req, res) => {
   });
 });
 
-// ======================================================
-// 📦 Importation de toutes les routes du projet
-// ======================================================
-
-// Authentification (register / login / verify)
+// --- Authentification ---
 const authRoutes = require("./routes/authRoutes")(db);
 app.use("/api", authRoutes);
 
-// Profil utilisateur
+// --- Profil utilisateur ---
 const userProfileRoutes = require("./routes/userroutes")(db);
 app.use("/api/user", userProfileRoutes);
 
-// Édition du profil utilisateur
+// --- Édition du profil utilisateur ---
 const editProfileRoutes = require("./routes/editprofileroutes")(db);
 app.use("/api/user", editProfileRoutes);
 
-// Diagnostic médical
+// --- Diagnostic médical ---
 const diagnosisRoutes = require("./routes/diagnosisRoutes")(db);
 app.use("/api/diagnosis", diagnosisRoutes);
 
-// Rendez-vous
+// --- Rendez-vous ---
 const terminRoutes = require("./routes/termineRoutes")(db);
 app.use("/api/termin", terminRoutes);
 
-// Nutrition
+// --- Nutrition ---
 const nutritionRoutes = require("./routes/nutritionroutes")(db);
 app.use("/api/nutrition", nutritionRoutes);
 
-// Vaccinations
+// --- Vaccinations ---
 const vaccinationRoutes = require("./routes/vaccinationRoutes")(db);
 app.use("/api/vaccinations", vaccinationRoutes);
 
-// Médicaments
+// --- Médicaments ---
 const medikamenteRoutes = require("./routes/medikamenteRoutes")(db);
 app.use("/api/medikamente", medikamenteRoutes);
 
-// Valeurs vitales
-const vitalsroutes = require("./routes/vitalsroutes")(db);
+// --- Valeurs vitales (⚡ socket.io inclus) ---
+const vitalsroutes = require("./routes/vitalsroutes")(db, io);
 app.use("/api/vitals", vitalsroutes);
 
-// Exportation PDF / CSV
+// --- Exportation PDF / CSV ---
 const exportRoutes = require("./routes/exportRoutes");
 app.use("/api", exportRoutes);
 
-// Envoi des mails au médecin
+// --- Envoi des mails ---
 const mailRoutes = require("./routes/mailRoutes");
 app.use("/api", mailRoutes);
-
-// ======================================================
-// ⚡ Configuration Socket.IO — communication en temps réel
-// ======================================================
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3001",
-    methods: ["GET", "POST"],
-  },
-});
-
-io.on("connection", (socket) => {
-  console.log("🟢 Nouveau client connecté :", socket.id);
-
-  socket.on("disconnect", () => {
-    console.log("🔴 Client déconnecté :", socket.id);
-  });
-});
 
 // ======================================================
 // 🟢 Lancement du serveur

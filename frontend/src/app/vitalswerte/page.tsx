@@ -46,7 +46,6 @@ export default function VitalswertePage() {
     new Date().toISOString().split("T")[0]
   );
 
-  
   /** --- Utils --- **/
   function getWeekRangeISO(d: Date) {
     const day = (d.getDay() + 6) % 7;
@@ -102,32 +101,31 @@ export default function VitalswertePage() {
   };
 
   const handleSubmit = async () => {
+    const datetime = `${values.datum} ${values.time}:00`;
     try {
       const res = await fetch(`${API_BASE}/api/vitals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ typ: type, ...values }),
+        body: JSON.stringify({ typ: type, ...values, datum: datetime  }),
       });
 
-       if (res.ok) {
-      // ✅ Recharge la liste complète
-      const date = new Date(selectedDate);
-      let url = "";
-      if (period === "day") {
-        url = `${API_BASE}/api/vitals/by-date/${selectedDate}`;
-      } else if (period === "week") {
-        const { start, end } = getWeekRangeISO(date);
-        url = `${API_BASE}/api/vitals/by-range?start=${start}&end=${end}`;
-      } else {
-        const { start, end } = getMonthRange(date);
-        url = `${API_BASE}/api/vitals/by-range?start=${start}&end=${end}`;
-      }
-      
-      const reloadRes = await fetch(url);
-      const data = await reloadRes.json();
-      setVitals(Array.isArray(data) ? data : []);
+      if (res.ok) {
+        const date = new Date(selectedDate);
+        let url = "";
+        if (period === "day") {
+          url = `${API_BASE}/api/vitals/by-date/${selectedDate}`;
+        } else if (period === "week") {
+          const { start, end } = getWeekRangeISO(date);
+          url = `${API_BASE}/api/vitals/by-range?start=${start}&end=${end}`;
+        } else {
+          const { start, end } = getMonthRange(date);
+          url = `${API_BASE}/api/vitals/by-range?start=${start}&end=${end}`;
+        }
 
-      // Réinitialise le formulaire
+        const reloadRes = await fetch(url);
+        const data = await reloadRes.json();
+        setVitals(Array.isArray(data) ? data : []);
+
         setValues({
           herz: "",
           systolisch: "",
@@ -136,8 +134,7 @@ export default function VitalswertePage() {
           schritte: "",
           blutzucker: "",
           temperatur: "",
-           datum: "",
-          //datum: new Date().toISOString().slice(0, 16),
+          datum: "",
           time: "",
         });
       } else alert("Fehler beim Speichern der Daten.");
@@ -187,7 +184,7 @@ export default function VitalswertePage() {
               onClick={() => setType(t)}
               className={`p-2 rounded-lg text-sm border ${
                 type === t
-                  ? "bg-blue-600 text-white border-blue-600"
+                  ? "bg-green-500 text-white border-green-500"
                   : "bg-gray-100 border-gray-300 hover:bg-gray-200"
               }`}
             >
@@ -254,38 +251,38 @@ export default function VitalswertePage() {
               onChange={handleChange}
             />
           )}
-           <div className="flex flex-row gap-4">
-              {/* Champ Date */}
-              <div className="flex flex-col flex-1">
-                <label htmlFor="datum" className="text-gray-600 text-sm mb-1">
-                  Datum
-                </label>
-                <input
-                  id="datum"
-                  type="date"
-                  name="datum"
-                  value={values.datum}
-                  onChange={handleChange}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
 
-              {/* Champ Heure */}
-              <div className="flex flex-col flex-1">
-                <label htmlFor="uhrzeit" className="text-gray-600 text-sm mb-1">
-                  Uhrzeit
-                </label>
-                <input
-                  id="uhrzeit"
-                  type="time"
-                  name="uhrzeit"
-                  value={values.time}
-                  onChange={handleChange}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
+          <div className="flex flex-row gap-4">
+            {/* Champ Date */}
+            <div className="flex flex-col flex-1">
+              <label htmlFor="datum" className="text-gray-600 text-sm mb-1">
+                Datum
+              </label>
+              <input
+                id="datum"
+                type="date"
+                name="datum"
+                value={values.datum}
+                onChange={handleChange}
+                className="w-full p-3 border rounded-lg"
+              />
             </div>
-          
+
+            {/* Champ Heure */}
+            <div className="flex flex-col flex-1">
+              <label htmlFor="uhrzeit" className="text-gray-600 text-sm mb-1">
+                Uhrzeit
+              </label>
+              <input
+                id="uhrzeit"
+                type="time"
+                name="time"
+                value={values.time}
+                onChange={handleChange}
+                className="w-full p-3 border rounded-lg"
+              />
+            </div>
+          </div>
 
           <button
             onClick={handleSubmit}
@@ -305,7 +302,6 @@ export default function VitalswertePage() {
         >
           <option value="day">Tagesansicht</option>
           <option value="week">Wochenansicht</option>
-          
         </select>
         <input
           type="date"
@@ -329,97 +325,95 @@ export default function VitalswertePage() {
               <li
                 key={v.id}
                 className="flex justify-between items-center bg-gray-50 border border-gray-200 p-3 rounded-lg"
-              >{editing?.id === v.id ? (
-  <div className="flex flex-col w-full gap-2">
-    {v.typ === "herz" && (
-      <input
-        value={editing.herz || ""}
-        onChange={(e) =>
-          setEditing({ ...editing, herz: e.target.value })
-        }
-        placeholder="Herzfrequenz (BPM)"
-        className="p-2 border rounded"
-      />
-    )}
-    {v.typ === "blutdruck" && (
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          value={editing.systolisch || ""}
-          onChange={(e) =>
-            setEditing({ ...editing, systolisch: e.target.value })
-          }
-          placeholder="Systolisch"
-          className="p-2 border rounded"
-        />
-        <input
-          value={editing.diastolisch || ""}
-          onChange={(e) =>
-            setEditing({ ...editing, diastolisch: e.target.value })
-          }
-          placeholder="Diastolisch"
-          className="p-2 border rounded"
-        />
-      </div>
-    )}
-    {v.typ === "schlaf" && (
-      <input
-        value={editing.schlaf || ""}
-        onChange={(e) =>
-          setEditing({ ...editing, schlaf: e.target.value })
-        }
-        placeholder="Schlafdauer"
-        className="p-2 border rounded"
-      />
-    )}
-    {v.typ === "schritte" && (
-      <input
-        value={editing.schritte || ""}
-        onChange={(e) =>
-          setEditing({ ...editing, schritte: e.target.value })
-        }
-        placeholder="Schritte"
-        className="p-2 border rounded"
-      />
-    )}
-    {v.typ === "blutzucker" && (
-      <input
-        value={editing.blutzucker || ""}
-        onChange={(e) =>
-          setEditing({ ...editing, blutzucker: e.target.value })
-        }
-        placeholder="Blutzucker"
-        className="p-2 border rounded"
-      />
-    )}
-    {v.typ === "temperatur" && (
-      <input
-        value={editing.temperatur || ""}
-        onChange={(e) =>
-          setEditing({ ...editing, temperatur: e.target.value })
-        }
-        placeholder="Temperatur"
-        className="p-2 border rounded"
-      />
-    )}
-    <div className="flex justify-end gap-2">
-      <button
-        onClick={handleSaveEdit}
-        className="bg-green-500 text-white px-3 py-1 rounded"
-      >
-        Speichern
-      </button>
-      <button
-        onClick={() => setEditing(null)}
-        className="bg-gray-300 text-gray-700 px-3 py-1 rounded"
-      >
-        Abbrechen
-      </button>
-    </div>
-  </div>
-) : (
-  /* reste du code */
-
-
+              >
+                {editing?.id === v.id ? (
+                  <div className="flex flex-col w-full gap-2">
+                    {v.typ === "herz" && (
+                      <input
+                        value={editing.herz || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, herz: e.target.value })
+                        }
+                        placeholder="Herzfrequenz (BPM)"
+                        className="p-2 border rounded"
+                      />
+                    )}
+                    {v.typ === "blutdruck" && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          value={editing.systolisch || ""}
+                          onChange={(e) =>
+                            setEditing({ ...editing, systolisch: e.target.value })
+                          }
+                          placeholder="Systolisch"
+                          className="p-2 border rounded"
+                        />
+                        <input
+                          value={editing.diastolisch || ""}
+                          onChange={(e) =>
+                            setEditing({ ...editing, diastolisch: e.target.value })
+                          }
+                          placeholder="Diastolisch"
+                          className="p-2 border rounded"
+                        />
+                      </div>
+                    )}
+                    {v.typ === "schlaf" && (
+                      <input
+                        value={editing.schlaf || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, schlaf: e.target.value })
+                        }
+                        placeholder="Schlafdauer"
+                        className="p-2 border rounded"
+                      />
+                    )}
+                    {v.typ === "schritte" && (
+                      <input
+                        value={editing.schritte || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, schritte: e.target.value })
+                        }
+                        placeholder="Schritte"
+                        className="p-2 border rounded"
+                      />
+                    )}
+                    {v.typ === "blutzucker" && (
+                      <input
+                        value={editing.blutzucker || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, blutzucker: e.target.value })
+                        }
+                        placeholder="Blutzucker"
+                        className="p-2 border rounded"
+                      />
+                    )}
+                    {v.typ === "temperatur" && (
+                      <input
+                        value={editing.temperatur || ""}
+                        onChange={(e) =>
+                          setEditing({ ...editing, temperatur: e.target.value })
+                        }
+                        placeholder="Temperatur"
+                        className="p-2 border rounded"
+                      />
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={handleSaveEdit}
+                        className="bg-green-500 text-white px-3 py-1 rounded"
+                      >
+                        Speichern
+                      </button>
+                      <button
+                        onClick={() => setEditing(null)}
+                        className="bg-gray-300 text-gray-700 px-3 py-1 rounded"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <>
                     <div>
                       <p className="font-semibold capitalize">{v.typ}</p>
@@ -430,14 +424,14 @@ export default function VitalswertePage() {
                           : ""}
                       </p>
                       <p className="text-xs text-gray-500">
-  {new Date(v.datum).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })}
-</p>
+                        {new Date(v.datum).toLocaleString("de-DE", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <button
