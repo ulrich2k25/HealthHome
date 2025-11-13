@@ -12,7 +12,7 @@ require("dotenv").config();
 // 1️⃣ Création de l’application Express
 const app = express();
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "http://localhost:3001",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
@@ -43,7 +43,7 @@ db.connect((err) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3001",
     methods: ["GET", "POST"],
   },
 });
