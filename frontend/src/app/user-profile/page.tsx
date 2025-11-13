@@ -211,27 +211,26 @@ export default function UserProfilPage() {
           </button>
         </div>
 
-        {/* Profil info */}
-        <div className="flex flex-col items-center space-y-3 mb-6">
-          <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-5xl text-gray-500">
-            <UserCircle size={48} aria-label="Profilbild" />
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-800">Benutzerprofil</h1>
-          <p className="text-gray-500">Ihre persönlichen Informationen</p>
-        </div>
-
-        {/* Informations utilisateur */}
-        <div className="grid grid-cols-2 gap-4">
+       {/* Profil info */} 
+       <div className="flex flex-col items-center space-y-3 mb-6"> 
+        <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-5xl text-gray-500">
+         <UserCircle size={48} aria-label="Profilbild" /> 
+         </div> 
+         <h1 className="text-2xl font-semibold text-gray-800">Benutzerprofil</h1>
+          <p className="text-gray-500">Ihre persönlichen Informationen</p> 
+       </div> 
+              {/* Informations utilisateur */} 
+       <div className="grid grid-cols-2 gap-4">
+         <div>
+           <label className="text-sm text-gray-500" htmlFor="vorname">Vorname</label> 
+         <p id="vorname" className="bg-gray-50 p-2 rounded-md">{user.vorname}</p> 
+         </div>
           <div>
-            <label className="text-sm text-gray-500" htmlFor="vorname">Vorname</label>
-            <p id="vorname" className="bg-gray-50 p-2 rounded-md">{user.vorname}</p>
+             <label className="text-sm text-gray-500" htmlFor="nachname">Nachname</label> 
+         <p id="nachname" className="bg-gray-50 p-2 rounded-md">{user.nachname}</p>
           </div>
-          <div>
-            <label className="text-sm text-gray-500" htmlFor="nachname">Nachname</label>
-            <p id="nachname" className="bg-gray-50 p-2 rounded-md">{user.nachname}</p>
-          </div>
-          <div className="col-span-2">
-            <label className="text-sm text-gray-500" htmlFor="email">E-Mail-Adresse</label>
+           <div className="col-span-2">
+           <label className="text-sm text-gray-500" htmlFor="email">E-Mail-Adresse</label>
             <p id="email" className="bg-gray-50 p-2 rounded-md">{user.email}</p>
           </div>
            <div> <label className="text-sm text-gray-500" htmlFor="alter">Alter</label> 

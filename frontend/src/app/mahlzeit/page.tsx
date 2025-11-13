@@ -148,7 +148,7 @@ export default function DashboardMeals() {
       {/* FORMULAIRE */}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-900 border border-gray-800 p-4 rounded-2xl space-y-3"
+        className="bg-white-900 border border-gray-800 p-4 rounded-2xl space-y-3"
       >
         <div className="grid md:grid-cols-2 gap-3">
           <input
@@ -156,14 +156,14 @@ export default function DashboardMeals() {
             value={meal.name}
             onChange={(e) => setMeal({ ...meal, name: e.target.value })}
             placeholder="Mahlzeit"
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg bg-white-800  border border-gray-200 text-black"
           />
           <input
             name="amount"
             value={meal.amount}
             onChange={(e) => setMeal({ ...meal, amount: e.target.value })}
             placeholder="Menge (g/ml)"
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg bg-white-800 border border-gray-200 text-black"
           />
           <input
             name="calories"
@@ -171,21 +171,24 @@ export default function DashboardMeals() {
             value={meal.calories}
             onChange={(e) => setMeal({ ...meal, calories: e.target.value })}
             placeholder="Kalorien"
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg bg-white-800 border border-gray-200 text-black"
           />
           <input
             name="date"
             type="date"
             value={meal.date || ""}
             onChange={(e) => setMeal({ ...meal, date: e.target.value })}
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg bg-white-800 border border-gray-200 text-black"
           />
           <input
             name="time"
             type="time"
             value={meal.time}
             onChange={(e) => setMeal({ ...meal, time: e.target.value })}
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg bg-white-800 border border-gray-200 text-black"
+
+
+
           />
           <select
             name="type"
@@ -193,7 +196,7 @@ export default function DashboardMeals() {
             onChange={(e) =>
               setMeal({ ...meal, type: e.target.value as MealType })
             }
-            className="p-2 rounded-lg bg-gray-800 text-white"
+            className="p-2 rounded-lg bg-white-800  border border-gray-200 text-black"
           >
             <option>Frühstück</option>
             <option>Mittagessen</option>
@@ -214,7 +217,7 @@ export default function DashboardMeals() {
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as any)}
-          className="p-2 bg-gray-800 text-white rounded"
+          className="p-2 bg-white-800 border border-gray-200 text-black rounded"
         >
           <option value="day">Tagesansicht</option>
           <option value="week">Wochenansicht</option>
@@ -224,15 +227,15 @@ export default function DashboardMeals() {
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="p-2 bg-gray-800 text-white rounded"
+          className="p-2 bg-white-800 border border-gray-200 text-black rounded"
         />
       </div>
 
       {/* TOTAL */}
-      <div className="bg-gray-800 p-4 rounded-xl flex justify-between items-center">
+      <div className="bg-white-800 border border-gray-200 p-4 rounded-xl flex justify-between items-center">
         <div>
           <h3 className="text-gray-400 text-sm">Kalorienüberwachung</h3>
-          <p className="text-xl font-bold text-white">
+          <p className="text-xl font-bold text-black">
             {period === "day"
               ? "Tägliche Kalorienbilanz"
               : period === "week"
@@ -248,14 +251,14 @@ export default function DashboardMeals() {
       </div>
 
       {/* TABLEAU */}
-      <div className="bg-gray-900 border border-gray-800 p-4 rounded-2xl">
+      <div className="bg-white-900 border border-white-800 p-4 rounded-2xl">
         <h3 className="text-white font-semibold mb-3">Gespeicherte Mahlzeiten</h3>
 
         {meals.length === 0 ? (
-          <p className="text-gray-500">Keine Einträge</p>
+          <p className="text-black-500">Keine Einträge</p>
         ) : (
-          <table className="w-full text-sm text-left text-gray-300">
-            <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
+          <table className="w-full text-sm text-left text-white-300">
+            <thead className="bg-white-800 text-black-400 uppercase text-xs">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Menge</th>
@@ -268,7 +271,7 @@ export default function DashboardMeals() {
             </thead>
             <tbody>
               {meals.map((m) => (
-                <tr key={m.id} className="border-t border-gray-700 hover:bg-gray-800/40">
+                <tr key={m.id} className="border-t border-white-700 hover:bg-white-800/40">
                   {editingMeal?.id === m.id ? (
                     <>
                       <td className="px-3 py-2">
@@ -277,7 +280,7 @@ export default function DashboardMeals() {
                           onChange={(e) =>
                             setEditingMeal({ ...editingMeal, name: e.target.value })
                           }
-                          className="bg-gray-700 text-white rounded px-2 py-1 w-full"
+                          className="bg-white-700 text-black rounded px-2 py-1 w-full"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -286,7 +289,7 @@ export default function DashboardMeals() {
                           onChange={(e) =>
                             setEditingMeal({ ...editingMeal, amount: e.target.value })
                           }
-                          className="bg-gray-700 text-white rounded px-2 py-1 w-full"
+                          className="bg-white-700 text-black rounded px-2 py-1 w-full"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -299,7 +302,7 @@ export default function DashboardMeals() {
                               calories: Number(e.target.value),
                             })
                           }
-                          className="bg-gray-700 text-white rounded px-2 py-1 w-full"
+                          className="bg-white-700 text-black rounded px-2 py-1 w-full"
                         />
                       </td>
                       <td colSpan={3}></td>
@@ -312,7 +315,7 @@ export default function DashboardMeals() {
                         </button>
                         <button
                           onClick={() => setEditingMeal(null)}
-                          className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-white"
+                          className="bg-white-600 hover:bg-white-700 px-3 py-1 rounded text-white"
                         >
                           ❌
                         </button>
