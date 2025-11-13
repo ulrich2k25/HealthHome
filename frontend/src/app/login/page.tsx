@@ -19,35 +19,33 @@ export default function LoginPage() {
         password,
       });
 
-     
-      // ✅ Sauvegarde du token et de l'email dans localStorage
       const user = res.data.user;
       const token = res.data.token;
 
-      // ⚙ Normalisation du nom de la clé ("token" pour être cohérent avec la vérif)
+      // ✅ Sauvegarde du token et de l'utilisateur
       localStorage.setItem("token", token);
       localStorage.setItem("email", user.email);
       localStorage.setItem("userId", user.id);
 
-      setMessage("✅ Connexion réussie !");
+      setMessage("✅ Verbindung erfolgreich !");
       
-      // Attendre une petite seconde avant redirection
+      // ⏳ Redirection vers le dashboard après un court délai
       setTimeout(() => {
         router.push("/dashboard");
       }, 600);
 
     } catch (err: any) {
       if (err.response?.status === 401)
-        setMessage("❌ Mot de passe incorrect.");
+        setMessage("❌ Falsches Passwort.");
       else if (err.response?.status === 404)
-        setMessage("❌ Utilisateur non trouvé.");
+        setMessage("❌Benutzer nicht gefunden.");
       else if (err.response?.status === 403)
-        setMessage("⚠ Veuillez d'abord vérifier votre email.");
+        setMessage("⚠️ Bitte überprüfen Sie zuerst Ihre E-Mails.");
       else
-        setMessage("⚠ Erreur de connexion au serveur.");
+        setMessage("⚠️ Erreur de connexion au serveur.");
     }
   };
-  
+
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen text-[#1F2937]"
@@ -59,6 +57,7 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm space-y-4"
       >
+        {/* Champ Email */}
         <div>
           <label htmlFor="email" className="block mb-1 text-sm font-medium">
             Email
@@ -74,6 +73,7 @@ export default function LoginPage() {
           />
         </div>
 
+        {/* Champ Mot de passe */}
         <div>
           <label htmlFor="password" className="block mb-1 text-sm font-medium">
             Mot de passe
@@ -89,14 +89,24 @@ export default function LoginPage() {
           />
         </div>
 
+        {/* Bouton Connexion */}
         <button
           type="submit"
           className="w-full bg-[#4F9DDE] hover:bg-[#3B82C4] py-2 rounded font-semibold text-white"
         >
           Anmelden
         </button>
+
+        {/* 🔹 Lien “Mot de passe oublié” */}
+        <p
+          className="text-sm text-center mt-2 text-blue-600 cursor-pointer hover:underline"
+          onClick={() => router.push("/forgot-password")}
+        >
+          Passwort vergessen?
+        </p>
       </form>
 
+      {/* Message d'état */}
       {message && (
         <p
           className="mt-4 text-sm"

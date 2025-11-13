@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation"; // 👈 pour savoir sur quelle page on est
+import { usePathname, useRouter } from "next/navigation"; // 👈 ajouté router
+import axios from "axios"; // 👈 ajouté pour vérifier le token
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -10,13 +11,47 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [doctorEmail, setDoctorEmail] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("pdf");
 
-  // 🔹 États pour afficher / cacher les boîtes modales
   const [showExportBox, setShowExportBox] = useState(false);
   const [showMailBox, setShowMailBox] = useState(false);
-  const pathname = usePathname();
 
-  // Liste des pages publiques
-  const publicPages = ["/login", "/register", "/verifyemail"];
+  const pathname = usePathname();
+  const router = useRouter(); // 👈 nécessaire pour la redirection
+
+  // 🔹 Liste des pages publiques
+  const publicPages = ["/login", "/register", "/verifyemail", "/forgot-password", "/reset-password"];
+
+  // ============================================================
+  // 🧠 LOGIQUE AJOUTÉE : Empêcher la connexion automatique + rediriger vers page d'accueil (/)
+  // ============================================================
+  useEffect(() => {
+    // 1️⃣ Empêche la reconnexion automatique au chargement
+    const token = localStorage.getItem("token");
+    const email = localStorage.getItem("email");
+
+    if (!token || !email) {
+      setIsLoggedIn(false);
+      if (!publicPages.includes(pathname)) {
+        router.push("/"); // ✅ redirige vers la page d'accueil
+      }
+      return;
+    }
+
+    // 2️⃣ Vérifie la validité du token auprès du backend
+    axios
+      .post("http://localhost:4000/api/verify-token", { email, token })
+      .then((res) => {
+        if (res.data.valid) {
+          setIsLoggedIn(true);
+        } else {
+          localStorage.clear();
+          router.push("/"); // ✅ redirige vers la page d'accueil
+        }
+      })
+      .catch(() => {
+        localStorage.clear();
+        router.push("/"); // ✅ redirige vers la page d'accueil
+      });
+  }, [pathname, router]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -25,7 +60,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (storedId) setUserId(Number(storedId));
   }, []);
 
-  // Si on est sur une page publique, on cache la sidebar et l’en-tête
+  // 🔹 Si on est sur une page publique → pas de sidebar
   const hideSidebar = publicPages.includes(pathname) || !isLoggedIn;
 
   // ============================================================
@@ -45,7 +80,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setShowExportBox(false); // 🔹 Ferme la boîte après téléchargement
+      setShowExportBox(false);
     } catch (error) {
       alert("⚠️ Fehler beim Generieren der Datei.");
     }
@@ -66,7 +101,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       });
       if (!response.ok) throw new Error();
       alert("✅ E-Mail wurde erfolgreich gesendet!");
-      setShowMailBox(false); // 🔹 Ferme la boîte après succès
+      setShowMailBox(false);
       setDoctorEmail("");
     } catch {
       alert("❌ Fehler beim Senden der E-Mail.");
@@ -78,7 +113,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Sidebar visible uniquement si connecté ET pas sur une page publique */}
       {!hideSidebar && (
         <aside className="bg-white border-r border-gray-300 text-gray-800 flex flex-col min-h-screen relative">
-          {/* --- Haut : Logo + Liens --- */}
           <div className="p-5 flex flex-col flex-grow">
             <h1 className="text-2xl font-bold mb-8 tracking-wide">HealthHome</h1>
             <nav className="space-y-2">
@@ -103,9 +137,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </div>
 
-          {/* --- Bas : Boutons fixes --- */}
-<div className="border-t border-gray-300 p-4 mt-8 mb-12">
-            {/* Bouton principal : Datenexport */}
+          {/* --- Bas : boutons fixes --- */}
+          <div className="border-t border-gray-300 p-4 mt-8 mb-12">
             <button
               onClick={() => {
                 setShowExportBox((prev) => !prev);
@@ -116,7 +149,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               📊 Datenexport
             </button>
 
-            {/* Bouton principal : Email */}
             <button
               onClick={() => {
                 setShowMailBox((prev) => !prev);
@@ -133,16 +165,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <div className="absolute bottom-28 left-5 right-5 bg-white border border-gray-300 rounded-lg shadow-lg p-4 animate-fade-in">
               <h3 className="text-gray-800 font-semibold mb-3">Format wählen:</h3>
               <div className="flex gap-3">
-                <button
-                  onClick={() => downloadFile("pdf")}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded"
-                >
+                <button onClick={() => downloadFile("pdf")} className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded">
                   📄 PDF
                 </button>
-                <button
-                  onClick={() => downloadFile("csv")}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded"
-                >
+                <button onClick={() => downloadFile("csv")} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded">
                   📊 CSV
                 </button>
               </div>
@@ -166,7 +192,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 placeholder="arzt@example.de"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3"
               />
-
               <label className="text-gray-700 font-medium">Format wählen:</label>
               <select
                 value={selectedFormat}
@@ -176,7 +201,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <option value="pdf">PDF</option>
                 <option value="csv">CSV</option>
               </select>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowMailBox(false)}
@@ -201,7 +225,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {!hideSidebar && (
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-semibold">Overview</h2>
-            <div className="text-sm text-gray-500">Prototype • v0</div>
           </div>
         )}
         {children}

@@ -4,6 +4,9 @@ const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
 const router = express.Router();
 
+// 🧠 Dictionnaire temporaire pour stocker les tentatives
+const loginAttempts = {}; // { email: { count: number, lastAttempt: timestamp } }
+
 module.exports = (db) => {
   // === INSCRIPTION ===
   router.post("/register", async (req, res) => {
@@ -13,14 +16,12 @@ module.exports = (db) => {
     }
 
     try {
-      // Vérifie si l'utilisateur existe déjà
       const [existingUser] = await db
         .promise()
         .query("SELECT * FROM users WHERE email = ?", [email]);
       if (existingUser.length > 0)
         return res.status(409).send("⚠️ Cet email existe déjà.");
 
-      // Supprimer si déjà en pending
       const [pending] = await db
         .promise()
         .query("SELECT * FROM pending_users WHERE email = ?", [email]);
@@ -37,7 +38,7 @@ module.exports = (db) => {
           [vorname, nachname, email, hashed, code]
         );
 
-      const message = `Hallo ${vorname},\n\nHier ist Ihr HealthHome-Verifizierungscode : ${code}\n\nCe code expirera dans 10 minutes.`;
+      const message = `Hallo ${vorname},\n\nHier ist Ihr HealthHome-Verifizierungscode : ${code}\n\n Dieser Code läuft in 10 Minuten ab.`;
       await sendEmail(email, "Code de vérification HealthHome", message);
 
       console.log("✉️ Email de vérification envoyé à :", email);
@@ -88,42 +89,66 @@ module.exports = (db) => {
     }
   });
 
-  // === LOGIN (avec enregistrement du token en DB) ===
+  // === LOGIN (avec limitation d'essais) ===
   router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password)
       return res.status(400).send("⚠ Données manquantes.");
 
     try {
+      // 🔒 Vérifie les tentatives précédentes
+      const record = loginAttempts[email] || { count: 0, lastAttempt: 0 };
+      const now = Date.now();
+
+      // Si 5 échecs en moins de 10 minutes → bloquer
+      if (record.count >= 3 && now - record.lastAttempt < 10 * 60 * 1000) {
+        return res
+          .status(429)
+          .send("⛔ Trop de tentatives. Réessaie dans 10 minutes.");
+      }
+
       const [rows] = await db
         .promise()
         .query("SELECT * FROM users WHERE email = ?", [email]);
 
-      if (rows.length === 0)
+      if (rows.length === 0) {
+        // Compte inexistant → incrémente le compteur
+        loginAttempts[email] = { count: record.count + 1, lastAttempt: now };
         return res.status(404).send("❌ Utilisateur non trouvé.");
+      }
 
       const user = rows[0];
       const isValid = bcrypt.compareSync(password, user.password);
-      if (!isValid) return res.status(401).send("❌ Mot de passe incorrect.");
+
+      if (!isValid) {
+        // ❌ Mauvais mot de passe → incrémente le compteur
+        loginAttempts[email] = { count: record.count + 1, lastAttempt: now };
+        return res.status(401).send("❌ Mot de passe incorrect.");
+      }
 
       if (user.verified === 0)
         return res
           .status(403)
           .send("⚠ Veuillez d'abord vérifier votre email avant de vous connecter.");
 
+      // ✅ Connexion réussie → reset du compteur
+      delete loginAttempts[email];
+
       // 🔐 Génère un token JWT valable 30 jours
       const token = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET || "secret_key_dev",
-        { expiresIn: "30d" }
+
+        //delai de validite du token
+       { expiresIn: "30m" } // 10 minutes
+
       );
 
-      // 💾 Sauvegarde le token dans la base pour reconnexion ultérieure
+      // 💾 Sauvegarde du token
       await db
         .promise()
         .query("UPDATE users SET auth_token = ? WHERE email = ?", [token, email]);
 
-      // ✅ Renvoie le token au frontend
       res.json({
         message: "✅ Connexion réussie.",
         token,
@@ -140,7 +165,7 @@ module.exports = (db) => {
     }
   });
 
-  // === VÉRIFICATION DU TOKEN (depuis n'importe où) ===
+  // === VÉRIFICATION DU TOKEN ===
   router.post("/verify-token", async (req, res) => {
     const { email, token } = req.body;
 
@@ -148,10 +173,8 @@ module.exports = (db) => {
       return res.status(400).json({ valid: false, message: "Email ou token manquant" });
 
     try {
-      // Vérifie que le token est valide (non expiré)
       jwt.verify(token, process.env.JWT_SECRET || "ton_secret_jwt");
 
-      // Vérifie s'il correspond à celui en base
       const [rows] = await db
         .promise()
         .query("SELECT auth_token FROM users WHERE email = ?", [email]);

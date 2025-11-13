@@ -104,6 +104,10 @@ app.use("/api", exportRoutes);
 const mailRoutes = require("./routes/mailRoutes");
 app.use("/api", mailRoutes);
 
+const resetPasswordRoutes = require("./routes/resetPasswordRoutes")(db);
+app.use("/api", resetPasswordRoutes);
+
+
 // ======================================================
 // ⚡ Configuration Socket.IO — communication en temps réel
 // ======================================================
